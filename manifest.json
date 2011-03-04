@@ -1,0 +1,24 @@
+﻿{
+	"name":"__MSG_extName__",
+	"version":"0.0.1.0",
+	"author":"__MSG_author__",
+	"description":"__MSG_description__",
+	"icons":{
+		"16":"icon-16.png",
+		"48":"icon-48.png",
+		"128":"icon-128.png"
+	},
+	"content_scripts":[{
+		"js":["gia.js"],
+		"matches":["http://*/*","https://*/*"],
+		"all_frames":true
+	}],
+	"permissions":[
+		"contextMenus",
+		"tabs",
+		"http://*/*",
+		"https://*/*"
+	],
+	"default_locale":"en",
+	"background_page":"background.html"
+}
