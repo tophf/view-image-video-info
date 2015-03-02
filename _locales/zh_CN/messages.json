@@ -8,28 +8,28 @@
 	"description":{
 		"message":"通过右键菜单获取图片的尺寸，URL，文件大小，文件类型等信息"
 	},
-	"contextMenuStr":{
+	"contextMenu":{
 		"message":"查看图片信息"
 	},
 	"ilam":{
 		"message":"图片下载取消"
 	},
-	"ilem":{
+	"errorLoading":{
 		"message":"图片下载错误"
 	},
-	"loc":{
+	"location":{
 		"message":"图片位置"
 	},
-	"dims":{
+	"dimensions":{
 		"message":"图片尺寸"
 	},
-	"ftype":{
+	"fileType":{
 		"message":"图片类型"
 	},
-	"fsize":{
+	"fileSize":{
 		"message":"文件大小"
 	},
-	"prev":{
+	"preview":{
 		"message":"预览图片"
 	},
 	"eifz":{
@@ -59,7 +59,7 @@
 	"eTit":{
 		"message":"--"
 	},
-	"smsg":{
+	"scaledTo":{
 		"message":"显示尺寸:"
 	}
 }

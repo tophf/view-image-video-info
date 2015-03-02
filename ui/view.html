@@ -1,0 +1,34 @@
+﻿<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="view.css" rel="stylesheet"/>
+  <link href="view-dark.css" rel="stylesheet" media="(prefers-color-scheme: dark)"/>
+</head>
+<body>
+  <table>
+    <tr>
+      <td tl>location</td>
+      <td id="url-td"><a id="url" target="_blank" rel="noopener noreferrer"></a></td>
+    </tr>
+    <tr>
+      <td tl>dimensions</td>
+      <td><b id="dimensions"></b> <i id="scaled"></i></td>
+    </tr>
+    <tr>
+      <td tl>fileType</td>
+      <td><b id="type"><img src="/images/loading-s.gif"/></b> <span>image</span></td>
+    </tr>
+    <tr>
+      <td tl>fileSize</td>
+      <td><b id="size"><img src="/images/loading-s.gif"/></b> <i id="bytes"></i></td>
+    </tr>
+    <tr>
+      <td tl>alt</td>
+      <td id="alt"></td>
+    </tr>
+  </table>
+  <img id="image" src="/images/loading-s.gif"/>
+  <script src="view.js"></script>
+</body>
+</html>

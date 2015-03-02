@@ -1,24 +1,25 @@
 ﻿{
-	"name":"__MSG_extName__",
-	"version":"0.0.1.0",
-	"author":"__MSG_author__",
-	"description":"__MSG_description__",
-	"icons":{
-		"16":"icon-16.png",
-		"48":"icon-48.png",
-		"128":"icon-128.png"
-	},
-	"content_scripts":[{
-		"js":["gia.js"],
-		"matches":["http://*/*","https://*/*"],
-		"all_frames":true
-	}],
-	"permissions":[
-		"contextMenus",
-		"tabs",
-		"http://*/*",
-		"https://*/*"
-	],
-	"default_locale":"en",
-	"background_page":"background.html"
+  "manifest_version": 2,
+  "minimum_chrome_version": "63",
+  "name": "__MSG_extName__",
+  "version": "1.0",
+  "author": "__MSG_author__",
+  "description": "__MSG_description__",
+  "icons": {
+    "16": "images/icon-16.png",
+    "48": "images/icon-48.png",
+    "128": "images/icon-128.png"
+  },
+  "permissions": [
+    "contextMenus",
+    "<all_urls>"
+  ],
+  "default_locale": "en",
+  "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDFCsceeED+YYEgjs62IOuxXEH0H/1cCsqiWp34spoHcSbkWC/8dP1oGlJci8Wpa6+bQkzpCVe14bVHpca8JZ7r8Y0ESs/NptuGKq57xsWgOJ/gnoxV1vWmO1pUTOiLSvxXYunFczMSsqNB3ZXdY3H0gmZzAXOnfDrLJNqWmZIVSwIDAQAB",
+  "background": {
+    "scripts": [
+      "bg.js"
+    ],
+    "persistent": false
+  }
 }
