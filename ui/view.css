@@ -10,11 +10,6 @@ body {
   color: #000;
   font-size: 14px;
 }
-@media (min-height: 600px) {
-  body {
-    overflow: auto;
-  }
-}
 tr:nth-child(even) {
   background-color: #8882;
 }
@@ -43,7 +38,7 @@ a:hover {
   color: maroon;
 }
 #url {
-  max-width: calc(100vw - 110px);
+  max-width: calc(100vw - var(--cut, 90px));
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -51,9 +46,17 @@ a:hover {
 }
 #image {
   max-width: 100%;
-  padding: 4px 4px 0;
+  padding: var(--padding,4px) var(--padding,4px) 0;
   box-sizing: border-box;
 }
 #type[disabled] + * {
   display: none;
+}
+@media (min-height: 750px) {
+  body {
+    overflow-y: auto;
+  }
+  #url {
+    max-width: calc(100vw - var(--cut, 90px) - 24px);
+  }
 }

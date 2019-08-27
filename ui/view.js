@@ -32,15 +32,33 @@ Object.assign(document, {
     height: h,
     dispWidth: dw,
     dispHeight: dh,
+    imagePadding,
+    urlWidthCut,
   } = info;
   dom.alt.textContent = [alt, title].filter(Boolean).join(' / ');
   Object.assign(dom.url, {
     href: src,
     title: src,
     textContent: src,
+    style: `--cut:${urlWidthCut}px`,
   });
   Object.assign(dom.image, {
     src: src,
+    style: `--padding:${imagePadding}px`,
+    onload() {
+      chrome.windows.getCurrent(w => {
+        const td = document.getElementsByTagName('td')[0];
+        const {paddingLeft: tdL, paddingRight: tdR} = getComputedStyle(td);
+        const urlWidthCut = td.clientWidth + parseFloat(tdL) + parseFloat(tdR) | 0;
+        if (urlWidthCut !== info.urlWidthCut)
+          dom.url.style.setProperty('--cut', urlWidthCut + 'px');
+        chrome.storage.local.set({
+          windowExtrasHeight: w.height - window.innerHeight | 0,
+          legendHeight: dom.image.getBoundingClientRect().top | 0,
+          urlWidthCut,
+        });
+      });
+    },
     onerror() {
       dom.dimensions.textContent = '';
       dom.image.replaceWith(tl('errorLoading'));

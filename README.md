@@ -18,6 +18,7 @@ Minor changes:
 ### Permissions:
 
 * `contextMenus` - to add the context menu, duh
+* `storage` - to keep the calculated widths/heights and reuse them for more precise sizing of the entire UI window and its elements
 * `<all_urls>` - required to get the image file size and its content type (JPEG/PNG and so on)
 
 ### How to limit the site permissions 

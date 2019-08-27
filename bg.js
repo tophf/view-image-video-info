@@ -1,10 +1,5 @@
 ﻿'use strict';
 
-const MAX_VIEW_WIDTH = 600;
-const MAX_VIEW_HEIGHT = 800;
-const MIN_VIEW_WIDTH = 400;
-const MIN_VIEW_HEIGHT = 220;
-const LEGEND_HEIGHT = 130;
 // used to access the data synchronously in the UI page
 // eslint-disable-next-line no-var
 var info = {};
@@ -53,12 +48,25 @@ function findOriginalImage(src) {
   }
 }
 
-function openUI(data) {
+async function openUI(data) {
+  const minWidth = 400;
+  const maxWidth = 600;
+  const minHeight = 220;
+  const maxHeight = 800;
+  const imagePadding = 4;
+  const {
+    windowExtrasHeight = 24,
+    legendHeight = 130,
+    urlWidthCut = 90,
+  } = await readStorage();
   info = data;
-  const {width: w, height: h} = info;
-  const width = clamp(MIN_VIEW_WIDTH, MAX_VIEW_WIDTH, w | 0);
-  const imgHeight = w < MAX_VIEW_WIDTH ? h : MAX_VIEW_WIDTH / (w || 1) * h | 0;
-  const height = clamp(MIN_VIEW_HEIGHT, MAX_VIEW_HEIGHT, LEGEND_HEIGHT + imgHeight + 32);
+  info.urlWidthCut = urlWidthCut;
+  info.imagePadding = imagePadding;
+  const {width: w = 1, height: h = 1} = info;
+  const width = clamp(minWidth, maxWidth, w);
+  const imgHeight = (Math.min(w, maxWidth) - 2 * imagePadding) / w * h;
+  const height = clamp(minHeight, maxHeight,
+    legendHeight + imgHeight + windowExtrasHeight + imagePadding);
   chrome.windows.create({
     width,
     height,
@@ -100,6 +108,13 @@ function fetchImageMeta(meta) {
   xhr.send();
 }
 
+function readStorage(key = null) {
+  return new Promise(resolve => {
+    chrome.storage.local.get(key, resolve);
+  });
+}
+
 function clamp(min, max, v) {
+  v |= 0;
   return v < min ? min : v > max ? max : v;
 }
