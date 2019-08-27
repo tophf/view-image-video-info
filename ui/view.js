@@ -5,7 +5,11 @@ const {info} = chrome.extension.getBackgroundPage();
 
 Object.assign(document, {
   title: OWN_NAME,
-  onkeydown: e => e.code === 'Escape' && close(),
+  onkeydown({code, altKey: a, shiftKey: s, ctrlKey: c, metaKey: m}) {
+    if (code === 'Escape' && !a && !s && !c && !m ||
+        code === 'KeyW' && !a && !s && (c || m))
+      close();
+  },
 });
 
 (async () => {
