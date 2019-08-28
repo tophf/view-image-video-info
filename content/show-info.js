@@ -15,8 +15,10 @@ typeof window.__showInfo !== 'function' && (() => {
     setupAutoFadeOut(info);
     el.style.opacity = 1;
 
-    const elUrl = el.shadowRoot.getElementById('url');
-    elUrl.style.maxWidth = elUrl.parentNode.offsetWidth + 'px';
+    requestAnimationFrame(() => {
+      const elUrl = el.shadowRoot.getElementById('url');
+      elUrl.style.maxWidth = elUrl.parentNode.offsetWidth + 'px';
+    });
   };
 
   function createUI(info) {
