@@ -1,8 +1,19 @@
 ﻿'use strict';
 
-// used to access the data synchronously in the UI page
-// eslint-disable-next-line no-var
-var info = {};
+let srcAsJson;
+
+chrome.tabs.onActivated.addListener(({tabId}) => {
+  contentScriptInit(tabId);
+});
+
+chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
+  if (tab.active && info.status === 'loading')
+    contentScriptInit(tabId);
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+  contentScriptInit(null);
+});
 
 chrome.contextMenus.create({
   id: '1',
@@ -10,111 +21,59 @@ chrome.contextMenus.create({
   title: chrome.i18n.getMessage('contextMenu'),
   contexts: ['image'],
   documentUrlPatterns: ['*://*/*', 'file://*/*'],
-}, () => chrome.runtime.lastError);
+}, ignoreLastError);
 
-chrome.contextMenus.onClicked.addListener(({srcUrl: src}, tab) => {
-  const isBase64 = src.startsWith('data:image/') && src.includes('base64');
-  const meta = {src, isBase64};
-  isBase64 ? setBase64Meta(meta) : fetchImageMeta(meta);
-  chrome.tabs.executeScript(
-    tab.id,
-    {code: `(${findOriginalImage})(${JSON.stringify(src)})`},
-    data => !chrome.runtime.lastError && openUI({...meta, ...data[0]})
-  );
+chrome.contextMenus.onClicked.addListener(({srcUrl}, tab) => {
+  srcAsJson = JSON.stringify(srcUrl);
+  chrome.runtime.onMessage.addListener(onMessage);
+  chrome.tabs.executeScript(tab.id, {
+    code: `(${contentScriptQuery})(${srcAsJson})`,
+    allFrames: true,
+    matchAboutBlank: true,
+  }, (canShow = []) => {
+    if (chrome.runtime.lastError || canShow.some(Boolean))
+      chrome.runtime.onMessage.removeListener(onMessage);
+  });
 });
 
-function findOriginalImage(src) {
-  const lastPart = src.split('/').pop();
-  for (const el of document.querySelectorAll(`img[src$="${lastPart}"]`)) {
-    if (el.src === src) {
-      const b = el.getBoundingClientRect();
-      const inView = b.width && b.height &&
-                     b.bottom > 0 && b.top < window.innerHeight &&
-                     b.right > 0 && b.left < window.innerWidth;
-      if (inView) {
-        return {
-          src,
-          alt: el.alt,
-          title: el.title,
-          width: el.naturalWidth,
-          height: el.naturalHeight,
-          dispWidth: el.width,
-          dispHeight: el.height,
-          left: b.left + screenX,
-          top: b.top + screenY,
-        };
-      }
-    }
+function onMessage(msg, sender) {
+  if (msg === 'show') {
+    chrome.runtime.onMessage.removeListener(onMessage);
+    const tabId = sender.tab.id;
+    const opts = {
+      frameId: sender.frameId,
+      matchAboutBlank: true,
+      runAt: 'document_start',
+    };
+    chrome.tabs.executeScript(tabId, {file: '/content/show-info.js', ...opts}, () =>
+      chrome.tabs.executeScript(tabId, {code: `(${contentScriptShow})(${srcAsJson})`, ...opts}));
   }
 }
 
-async function openUI(data) {
-  const minWidth = 400;
-  const maxWidth = 600;
-  const minHeight = 220;
-  const maxHeight = 800;
-  const imagePadding = 4;
-  const {
-    windowExtrasHeight = 24,
-    legendHeight = 130,
-    urlWidthCut = 90,
-  } = await readStorage();
-  info = data;
-  info.urlWidthCut = urlWidthCut;
-  info.imagePadding = imagePadding;
-  const {width: w = 1, height: h = 1} = info;
-  const width = clamp(minWidth, maxWidth, w);
-  const imgHeight = (Math.min(w, maxWidth) - 2 * imagePadding) / w * h;
-  const height = clamp(minHeight, maxHeight,
-    legendHeight + imgHeight + windowExtrasHeight + imagePadding);
-  chrome.windows.create({
-    width,
-    height,
-    top: clamp(0, screen.height - height, info.top) | 0,
-    left: clamp(0, screen.width - width, info.left) | 0,
-    type: 'popup',
-    url: 'ui/view.html',
-    focused: true,
-  });
+function contentScriptInit(tabId) {
+  chrome.tabs.executeScript(tabId, {
+    file: '/content/get-info.js',
+    allFrames: true,
+    matchAboutBlank: true,
+  }, ignoreLastError);
 }
 
-function setBase64Meta(meta) {
-  Object.assign(meta, {
-    title: 'base64 data',
-    type: meta.src.split(/[/;]/, 2).pop().toUpperCase(),
-    size: meta.src.split(';').pop().length / 6 * 8 | 0,
-    ready: true,
-  });
+function contentScriptQuery(src) {
+  const img = typeof __getInfo === 'function' && window.__getInfo(src);
+  if (img) {
+    const canShow = typeof __showInfo === 'function';
+    if (canShow)
+      window.__showInfo(src);
+    else
+      chrome.runtime.sendMessage('show');
+    return canShow;
+  }
 }
 
-function fetchImageMeta(meta) {
-  const xhr = new XMLHttpRequest();
-  xhr.open('HEAD', meta.src);
-  xhr.timeout = 10e3;
-  xhr.ontimeout = xhr.onerror = xhr.onreadystatechange = e => {
-    if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
-      meta.size = xhr.getResponseHeader('Content-Length') | 0;
-      meta.type = xhr.getResponseHeader('Content-Type');
-    } else if (xhr.status >= 300 || e.type === 'timeout' || e.type === 'error') {
-      meta.error = true;
-    } else {
-      return;
-    }
-    meta.ready = true;
-    chrome.runtime.sendMessage(meta);
-    if (meta.src === info.src)
-      Object.assign(info, meta);
-  };
-  xhr.send();
+function contentScriptShow(src) {
+  window.__showInfo(src);
 }
 
-function readStorage(key = null) {
-  return new Promise(resolve => {
-    chrome.storage.local.get(key, resolve);
-  });
-}
-
-function clamp(min, max, v) {
-  v |= 0;
-  return v < min ? min : v > max ? max : v;
+function ignoreLastError() {
+  return chrome.runtime.lastError;
 }

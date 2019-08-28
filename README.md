@@ -2,8 +2,12 @@
 
 Major changes:
  
-* removed google analytics 
-* removed the content script so the extension no longer adds any memory/CPU footprint to the tabs unless it's actually used
+* removed google analytics
+* moved the UI into the page instead of opening a new window
+* limited the content scripts usage:
+  * a small detector script runs only when a tab is focused for the first time
+  * the image element is analyzed only when the context menu is invoked
+  * the main content script that shows the UI runs only when the extension is invoked from the context menu
 
 Minor changes:
 
@@ -13,13 +17,12 @@ Minor changes:
 * almost all visible text was slightly reworded
 * the UI was slightly restyled
 
-![ui](https://i.imgur.com/vedN3yi.png)
+![ui](https://i.imgur.com/tWZGFGE.png)
 
 ### Permissions:
 
 * `contextMenus` - to add the context menu, duh
-* `storage` - to keep the calculated widths/heights and reuse them for more precise sizing of the entire UI window and its elements
-* `<all_urls>` - required to get the image file size and its content type (JPEG/PNG and so on)
+* `<all_urls>` - required to remember the right image before the context menu is invoked (the API doesn't allow to retroactively get the clicked element so unfortunately the extension cannot make do with just `activeTab` permission)
 
 ### How to limit the site permissions 
 
