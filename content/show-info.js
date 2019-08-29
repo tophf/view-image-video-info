@@ -132,10 +132,10 @@ typeof window.__showInfo !== 'function' && (() => {
     if (!bScroll.height)
       bScroll = {bottom: scrollY + innerHeight, right: bScroll.right};
     const b = info.el.getBoundingClientRect();
-    const y = Math.min(info.bounds.bottom, Math.min(innerHeight, bScroll.bottom) - b.height);
     const x = Math.min(info.bounds.left, Math.min(innerWidth, bScroll.right) - b.width);
-    info.el.style.top = y + scrollY + 'px';
+    const y = Math.min(info.bounds.bottom, Math.min(innerHeight, bScroll.bottom) - b.height);
     info.el.style.left = x + scrollX + 'px';
+    info.el.style.top = y + scrollY + 'px';
   }
 
   function renderFileMeta(info) {
