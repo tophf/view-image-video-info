@@ -15,13 +15,14 @@ chrome.runtime.onInstalled.addListener(() => {
   contentScriptInit(null);
 });
 
-chrome.contextMenus.create({
-  id: '1',
-  type: 'normal',
-  title: chrome.i18n.getMessage('contextMenu'),
-  contexts: ['image'],
-  documentUrlPatterns: ['*://*/*', 'file://*/*'],
-}, ignoreLastError);
+for (const type of ['Image', 'Video'])
+  chrome.contextMenus.create({
+    id: type,
+    type: 'normal',
+    title: chrome.i18n.getMessage('contextMenu' + type),
+    contexts: [type.toLowerCase()],
+    documentUrlPatterns: ['*://*/*', 'file://*/*'],
+  }, ignoreLastError);
 
 chrome.contextMenus.onClicked.addListener(({srcUrl}, tab) => {
   srcAsJson = JSON.stringify(srcUrl);

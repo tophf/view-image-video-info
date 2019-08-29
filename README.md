@@ -4,6 +4,7 @@ Major changes:
  
 * removed google analytics
 * moved the UI into the page instead of opening a new window
+* video info is also shown
 * limited the content scripts usage:
   * a small detector script runs only when a tab is focused for the first time
   * the image element is analyzed only when the context menu is invoked

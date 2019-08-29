@@ -6,7 +6,7 @@ typeof window.__showInfo !== 'function' && (() => {
 
     const el = info.el = createUI(info);
 
-    const isBase64 = src.startsWith('data:image/') && src.includes('base64');
+    const isBase64 = /^data:.*?base64/.test(src);
     (isBase64 ? setBase64Meta : fetchImageMeta)(info)
       .then(renderFileMeta);
 
@@ -22,14 +22,16 @@ typeof window.__showInfo !== 'function' && (() => {
   };
 
   function createUI(info) {
-    const {img, src, w, h, dw, dh} = info;
+    const {img, src, w, h, dw, dh, alt, title} = info;
+    const isImage = img.localName === 'img';
+    const altTitle = [alt, title].filter(Boolean).join(' / ');
     for (const el of document.getElementsByClassName(chrome.runtime.id))
       if (el.img === img)
         el.remove();
     const el = $make('div', {img, className: chrome.runtime.id});
     el.attachShadow({mode: 'open'});
     el.shadowRoot.append(
-      $make('style', {textContent: $style()}),
+      $make('style', $style()),
       $make('main', [
         $make('div', {
           id: 'close',
@@ -42,7 +44,7 @@ typeof window.__showInfo !== 'function' && (() => {
         }),
         $make('table', [
           $make('tr', [
-            $make('td', {textContent: tl('location')}),
+            $make('td', tl('location')),
             $make('td', [
               $make('a', {
                 id: 'url',
@@ -55,9 +57,9 @@ typeof window.__showInfo !== 'function' && (() => {
             ]),
           ]),
           $make('tr', [
-            $make('td', {textContent: tl('dimensions')}),
+            $make('td', tl('dimensions')),
             $make('td', [
-              $make('b', {textContent: w && h ? `${w} x ${h} px` : ''}),
+              $make('b', w && h ? `${w} x ${h} px` : ''),
               $make('i', {
                 textContent: dw && dh && dw !== w && dh !== h ?
                   ` (${tl('scaledTo')} ${dw} x ${dh} px)` :
@@ -66,22 +68,23 @@ typeof window.__showInfo !== 'function' && (() => {
             ]),
           ]),
           $make('tr', [
-            $make('td', {textContent: tl('fileType')}),
+            $make('td', tl('fileType')),
             $make('td', [
               $make('b', {id: 'type'}),
-              $make('span', {textContent: ' image'}),
+              $make('span', ' ' + tl(`type${isImage ? 'Image' : 'Video'}`)),
+              $make('span', isImage ? '' : `, ${formatDuration(info)}`),
             ]),
           ]),
           $make('tr', [
-            $make('td', {textContent: tl('fileSize')}),
+            $make('td', tl('fileSize')),
             $make('td', [
               $make('b', {id: 'size'}),
               $make('i', {id: 'bytes'}),
             ]),
           ]),
-          $make('tr', [
-            $make('td', {textContent: tl('alt')}),
-            $make('td', {textContent: [img.alt, img.title].filter(Boolean).join(' / ')}),
+          altTitle && $make('tr', [
+            $make('td', tl('alt')),
+            $make('td', altTitle),
           ]),
         ]),
       ])
@@ -118,6 +121,7 @@ typeof window.__showInfo !== 'function' && (() => {
 
   function renderFileMeta(info) {
     let {size, type, el} = info;
+    const elSize = el.shadowRoot.getElementById('size');
     if (size) {
       let unit;
       let n = size;
@@ -133,21 +137,17 @@ typeof window.__showInfo !== 'function' && (() => {
         size = `${formatNumber(n)} ${unit}`;
         el.shadowRoot.getElementById('bytes').textContent = ` (${bytes})`;
       }
+      elSize.textContent = size;
+    } else {
+      elSize.closest('tr').remove();
     }
-    Object.assign(el.shadowRoot.getElementById('size'), {
-      textContent: size || '',
-      disabled: !size,
-    });
 
-    type = type.split('/', 2).pop().toUpperCase();
-    type = type === 'HTML' ? '' : type;
-    Object.assign(el.shadowRoot.getElementById('type'), {
-      textContent: type || '',
-      disabled: !type,
-    });
-
-    if (info.error)
-      el.shadowRoot.querySelector('table').classList.add('error');
+    const elType = el.shadowRoot.getElementById('type');
+    type = (type || '').split('/', 2).pop().toUpperCase();
+    if (type && type !== 'HTML')
+      elType.textContent = type;
+    else
+      elType.closest('tr').remove();
   }
 
   function setBase64Meta(info) {
@@ -188,12 +188,21 @@ typeof window.__showInfo !== 'function' && (() => {
     return chrome.i18n.getMessage(s);
   }
 
+  function formatDuration({duration}) {
+    return new Date(0, 0, 0, 0, 0, duration | 0)
+      .toLocaleTimeString(undefined, {hourCycle: 'h24'})
+      // strip 00:0 at the beginning but leave one 0 for minutes so it looks like 0:07
+      .replace(/^0+:0?/, '');
+  }
+
   function $make(tag, props) {
     const el = document.createElement(tag);
+    if (typeof props === 'string')
+      props = {textContent: props};
     const hasProps = props && !Array.isArray(props);
     const children = hasProps ? props.children : props;
     if (children)
-      el.append(...children);
+      el.append(...children.filter(Boolean));
     if (children && hasProps)
       delete props.children;
     if (hasProps)
@@ -256,21 +265,12 @@ typeof window.__showInfo !== 'function' && (() => {
       .gray {
         color: gray;
       }
-      [disabled] {
-        opacity: .5;
-      }
-      .error td:last-child {
-        color: maroon;
-      }
       #url {
         max-width: 100px;
         display: block;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-      }
-      #type[disabled] + * {
-        display: none;
       }
       #close {
         cursor: pointer;

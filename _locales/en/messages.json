@@ -8,20 +8,20 @@
   "bytes": {
     "message": "bytes"
   },
-  "contextMenu": {
+  "contextMenuImage": {
     "message": "View image info"
   },
+  "contextMenuVideo": {
+    "message": "View video info"
+  },
   "description": {
-    "message": "Context menu for viewing image info (URL, dimensions, file size and type)"
+    "message": "Context menu for viewing image/video info (URL, dimensions, file size and type)"
   },
   "dimensions": {
     "message": "Dimensions"
   },
-  "errorLoading": {
-    "message": "Error loading image"
-  },
   "extName": {
-    "message": "View image info"
+    "message": "View image/video info"
   },
   "fileSize": {
     "message": "File size"
@@ -34,5 +34,11 @@
   },
   "scaledTo": {
     "message": "scaled to"
+  },
+  "typeImage": {
+    "message": "image"
+  },
+  "typeVideo": {
+    "message": "video"
   }
 }
