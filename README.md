@@ -2,10 +2,10 @@
 
 Major changes:
  
-* removed google analytics
-* moved the UI into the page instead of opening a new window
+* google analytics is removed
 * video info is also shown
-* limited the content scripts usage:
+* info is shown inside the page instead of a new window
+* content scripts usage is granular:
   * a small detector script runs only when a tab is focused for the first time
   * the image element is analyzed only when the context menu is invoked
   * the main content script that shows the UI runs only when the extension is invoked from the context menu
