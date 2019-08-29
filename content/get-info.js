@@ -1,16 +1,24 @@
 'use strict';
 
-if (typeof window.__getInfo !== 'function') {
+if (!window.hasOwnProperty(Symbol.for('info'))) {
+  const key = Symbol.for('info');
   for (const el of document.getElementsByClassName(chrome.runtime.id))
     el.remove();
-  let info;
-  window.__getInfo = src =>
-    info && info.src === src && info;
   window.addEventListener('contextmenu', function onMenu(e) {
-    const img = e.button === 2 && !e.altKey && e.composedPath()[0].closest('img, video');
-    info = img && {
+    const el = e.composedPath()[0].closest('img, video, a');
+    const img = !el || el.tagName !== 'A' ? el :
+      document.elementsFromPoint(e.clientX, e.clientY)
+        .find(el => el.tagName === 'IMG' || el.tagName === 'VIDEO');
+    try {
+      chrome.runtime.connect({name: img && img !== el ? img.tagName : ''});
+    } catch (e) {
+      delete window[key];
+      window.removeEventListener('contextmenu', onMenu);
+      return;
+    }
+    window[key] = img && {
       img,
-      src: img.src,
+      src: img.src || img.currentSrc,
       alt: img.alt,
       title: img.title,
       duration: img.duration,
@@ -20,9 +28,5 @@ if (typeof window.__getInfo !== 'function') {
       dw: img.clientWidth,
       dh: img.clientHeight,
     };
-    if (!chrome.i18n) {
-      delete window.__getInfo;
-      window.removeEventListener('contextmenu', onMenu);
-    }
   }, {passive: true});
 }

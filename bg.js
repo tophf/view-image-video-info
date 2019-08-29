@@ -1,7 +1,5 @@
 ﻿'use strict';
 
-let srcAsJson;
-
 chrome.tabs.onActivated.addListener(({tabId}) => {
   contentScriptInit(tabId);
 });
@@ -11,44 +9,38 @@ chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
     contentScriptInit(tabId);
 });
 
+chrome.runtime.onConnect.addListener(port => {
+  if (port.name) {
+    const type = port.name === 'IMG' ? 'Image' : 'Video';
+    addContextMenu(type, 'link');
+  } else {
+    chrome.contextMenus.remove('link');
+  }
+});
+
 chrome.runtime.onInstalled.addListener(() => {
   contentScriptInit(null);
 });
 
 for (const type of ['Image', 'Video'])
-  chrome.contextMenus.create({
-    id: type,
-    type: 'normal',
-    title: chrome.i18n.getMessage('contextMenu' + type),
-    contexts: [type.toLowerCase()],
-    documentUrlPatterns: ['*://*/*', 'file://*/*'],
-  }, ignoreLastError);
+  addContextMenu(type);
 
-chrome.contextMenus.onClicked.addListener(({srcUrl}, tab) => {
-  srcAsJson = JSON.stringify(srcUrl);
-  chrome.runtime.onMessage.addListener(onMessage);
-  chrome.tabs.executeScript(tab.id, {
-    code: `(${contentScriptQuery})(${srcAsJson})`,
-    allFrames: true,
-    matchAboutBlank: true,
-  }, (canShow = []) => {
-    if (chrome.runtime.lastError || canShow.some(Boolean))
-      chrome.runtime.onMessage.removeListener(onMessage);
+chrome.contextMenus.onClicked.addListener(({frameId}, tab) => {
+  const opts = {frameId, matchAboutBlank: true, runAt: 'document_start'};
+  chrome.tabs.executeScript(tab.id, {code: `(${contentScriptTryShow})()`, ...opts}, r => {
+    if (!chrome.runtime.lastError && !r[0])
+      chrome.tabs.executeScript(tab.id, {file: '/content/show-info.js', ...opts});
   });
 });
 
-function onMessage(msg, sender) {
-  if (msg === 'show') {
-    chrome.runtime.onMessage.removeListener(onMessage);
-    const tabId = sender.tab.id;
-    const opts = {
-      frameId: sender.frameId,
-      matchAboutBlank: true,
-      runAt: 'document_start',
-    };
-    chrome.tabs.executeScript(tabId, {file: '/content/show-info.js', ...opts}, () =>
-      chrome.tabs.executeScript(tabId, {code: `(${contentScriptShow})(${srcAsJson})`, ...opts}));
-  }
+function addContextMenu(type, id = type, cb = ignoreLastError) {
+  chrome.contextMenus.create({
+    id,
+    type: 'normal',
+    title: chrome.i18n.getMessage('contextMenu' + type),
+    contexts: [id.toLowerCase()],
+    documentUrlPatterns: ['*://*/*', 'file://*/*'],
+  }, cb);
 }
 
 function contentScriptInit(tabId) {
@@ -59,20 +51,9 @@ function contentScriptInit(tabId) {
   }, ignoreLastError);
 }
 
-function contentScriptQuery(src) {
-  const img = typeof __getInfo === 'function' && window.__getInfo(src);
-  if (img) {
-    const canShow = typeof __showInfo === 'function';
-    if (canShow)
-      window.__showInfo(src);
-    else
-      chrome.runtime.sendMessage('show');
-    return canShow;
-  }
-}
-
-function contentScriptShow(src) {
-  window.__showInfo(src);
+function contentScriptTryShow() {
+  const fn = window[Symbol.for('showInfo')];
+  return fn && (fn(), true);
 }
 
 function ignoreLastError() {

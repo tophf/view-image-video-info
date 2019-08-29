@@ -1,17 +1,20 @@
 'use strict';
 
-typeof window.__showInfo !== 'function' && (() => {
+!window[Symbol.for('showInfo')] && (() => {
   let uiStyle;
 
-  window.__showInfo = async src => {
-    const info = window.__getInfo(src);
+  window[Symbol.for('showInfo')] = showInfo;
+  showInfo();
+
+  async function showInfo() {
+    const info = window[Symbol.for('info')];
 
     if (!uiStyle)
       await loadStyle();
 
     const el = info.el = createUI(info);
 
-    const isBase64 = /^data:.*?base64/.test(src);
+    const isBase64 = /^data:.*?base64/.test(info.src);
     (isBase64 ? setBase64Meta : fetchImageMeta)(info)
       .then(renderFileMeta);
 
@@ -24,7 +27,7 @@ typeof window.__showInfo !== 'function' && (() => {
       const elUrl = el.shadowRoot.getElementById('url');
       elUrl.style.maxWidth = elUrl.parentNode.offsetWidth + 'px';
     });
-  };
+  }
 
   async function loadStyle() {
     const url = chrome.runtime.getURL('/content/show-info.css');
