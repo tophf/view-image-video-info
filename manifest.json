@@ -21,5 +21,8 @@
       "bg.js"
     ],
     "persistent": false
-  }
+  },
+  "web_accessible_resources": [
+    "content/*.css"
+  ]
 }

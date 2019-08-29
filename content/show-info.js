@@ -31,7 +31,10 @@ typeof window.__showInfo !== 'function' && (() => {
     const el = $make('div', {img, className: chrome.runtime.id});
     el.attachShadow({mode: 'open'});
     el.shadowRoot.append(
-      $make('style', $style()),
+      $make('link', {
+        rel: 'stylesheet',
+        href: chrome.runtime.getURL('/content/show-info.css'),
+      }),
       $make('main', [
         $make('div', {
           id: 'close',
@@ -208,96 +211,5 @@ typeof window.__showInfo !== 'function' && (() => {
     if (hasProps)
       Object.assign(el, props);
     return el;
-  }
-
-  function $style() {
-    // language=CSS
-    return `
-      :host {
-        all: initial;
-        opacity: 0;
-        transition: opacity .1s cubic-bezier(.88, .02, .92, .66);
-        box-sizing: border-box;
-        position: absolute;
-        box-shadow: 3px 4px 20px rgba(0, 0, 0, 0.5);
-        z-index: 2147483647;
-      }
-      main {
-        background-color: papayawhip;
-        color: #000;
-        font: normal 14px sans-serif;
-        white-space: nowrap;
-      }
-      table {
-        border-spacing: 0;
-      }
-      table, tr, td {
-        padding: 0;
-        margin: 0;
-      }
-      tr:nth-child(even) {
-        background-color: #8883;
-      }
-      td {
-        line-height: 24px;
-        padding-left: 4px;
-        padding-right: 4px;
-        height: 24px;
-      }
-      td:first-child {
-        padding-left: 1em;
-      }
-      td:last-child {
-        padding-right: 1em;
-      }
-      tr:first-child td {
-        padding-top: .5em;
-      }
-      tr:last-child td {
-        padding-bottom: .5em;
-      }
-      a {
-        text-decoration: none;
-      }
-      a:hover {
-        text-decoration: underline;
-      }
-      .gray {
-        color: gray;
-      }
-      #url {
-        max-width: 100px;
-        display: block;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      #close {
-        cursor: pointer;
-        padding: .5ex 1ex;
-        font: normal 15px/1.0 sans-serif;
-        position: absolute;
-        top: 0;
-        right: 0;
-      }
-      #close:active {
-        background-color: #f003;
-      }
-      #close:hover {
-        background-color: #f803;
-      }
-      @media (prefers-color-scheme: dark) {
-        main {
-          background-color: #333;
-          color: #aaa;
-        }
-        a {
-          color: skyblue;
-        }
-        b {
-          color: #bbb;
-        }
-      }
-    `;
   }
 })();
