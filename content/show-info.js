@@ -1,8 +1,13 @@
 'use strict';
 
 typeof window.__showInfo !== 'function' && (() => {
-  window.__showInfo = src => {
+  let uiStyle;
+
+  window.__showInfo = async src => {
     const info = window.__getInfo(src);
+
+    if (!uiStyle)
+      await loadStyle();
 
     const el = info.el = createUI(info);
 
@@ -21,6 +26,17 @@ typeof window.__showInfo !== 'function' && (() => {
     });
   };
 
+  async function loadStyle() {
+    const url = chrome.runtime.getURL('/content/show-info.css');
+    const css = await (await fetch(url)).text();
+    if (document.adoptedStyleSheets) {
+      uiStyle = new CSSStyleSheet();
+      uiStyle.replaceSync(css);
+    } else {
+      uiStyle = $make('style', css);
+    }
+  }
+
   function createUI(info) {
     const {img, src, w, h, dw, dh, alt, title} = info;
     const isImage = img.localName === 'img';
@@ -29,12 +45,12 @@ typeof window.__showInfo !== 'function' && (() => {
       if (el.img === img)
         el.remove();
     const el = $make('div', {img, className: chrome.runtime.id});
-    el.attachShadow({mode: 'open'});
-    el.shadowRoot.append(
-      $make('link', {
-        rel: 'stylesheet',
-        href: chrome.runtime.getURL('/content/show-info.css'),
-      }),
+    const root = el.attachShadow({mode: 'open'});
+    if (root.adoptedStyleSheets)
+      root.adoptedStyleSheets = [uiStyle];
+    else
+      root.appendChild(uiStyle.cloneNode(true));
+    root.append(
       $make('main', [
         $make('div', {
           id: 'close',
