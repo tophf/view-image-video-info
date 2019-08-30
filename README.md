@@ -26,7 +26,8 @@ Minor changes:
 ### Permissions:
 
 * `contextMenus` - to add the context menu, duh
-* `<all_urls>` - required to remember the right image before the context menu is invoked (the API doesn't allow to retroactively get the clicked element so unfortunately the extension cannot make do with just `activeTab` permission)
+* `webNavigation` - to enable the detector script (described above) in the iframes of the active tab
+* `<all_urls>` - to remember the right image before the context menu is invoked (the API doesn't allow to retroactively get the clicked element so unfortunately the extension cannot make do with just `activeTab` permission)
 
 ### How to limit the site permissions 
 

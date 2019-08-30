@@ -16,6 +16,7 @@
   },
   "permissions": [
     "contextMenus",
+    "webNavigation",
     "<all_urls>"
   ],
   "default_locale": "en",

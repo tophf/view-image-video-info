@@ -4,9 +4,11 @@ chrome.tabs.onActivated.addListener(({tabId}) => {
   contentScriptInit(tabId);
 });
 
-chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
-  if (tab.active && info.status === 'loading')
-    contentScriptInit(tabId);
+chrome.webNavigation.onCommitted.addListener(({tabId, frameId}) => {
+  chrome.tabs.get(tabId, tab => {
+    if (tab.active)
+      contentScriptInit(tabId, frameId);
+  });
 });
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -44,10 +46,11 @@ chrome.contextMenus.onClicked.addListener(({frameId}, tab) => {
   });
 });
 
-function contentScriptInit(tabId) {
+function contentScriptInit(tabId, frameId) {
   chrome.tabs.executeScript(tabId, {
     file: '/content/get-info.js',
-    allFrames: true,
     matchAboutBlank: true,
+    runAt: 'document_start',
+    ...(frameId >= 0 ? {frameId} : {allFrames: true}),
   }, () => chrome.runtime.lastError);
 }
