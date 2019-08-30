@@ -19,6 +19,10 @@
     "webNavigation",
     "<all_urls>"
   ],
+  "optional_permissions": [
+    "webRequest",
+    "webRequestBlocking"
+  ],
   "default_locale": "en",
   "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDFCsceeED+YYEgjs62IOuxXEH0H/1cCsqiWp34spoHcSbkWC/8dP1oGlJci8Wpa6+bQkzpCVe14bVHpca8JZ7r8Y0ESs/NptuGKq57xsWgOJ/gnoxV1vWmO1pUTOiLSvxXYunFczMSsqNB3ZXdY3H0gmZzAXOnfDrLJNqWmZIVSwIDAQAB",
   "background": {
