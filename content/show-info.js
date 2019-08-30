@@ -7,8 +7,10 @@
   return showInfo();
 
   function showInfo() {
-    const info = window[Symbol.for('info')];
     let bgRequest;
+    const info = window[Symbol.for('info')];
+    if (!info)
+      return;
 
     removeAll(info);
     createUI(info);
