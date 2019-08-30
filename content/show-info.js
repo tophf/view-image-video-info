@@ -135,8 +135,8 @@
     if (!bScroll.height)
       bScroll = {bottom: scrollY + innerHeight, right: bScroll.right};
     const b = info.el.getBoundingClientRect();
-    const x = Math.min(info.bounds.left, Math.min(innerWidth, bScroll.right) - b.width);
-    const y = Math.min(info.bounds.bottom, Math.min(innerHeight, bScroll.bottom) - b.height);
+    const x = Math.min(info.bounds.left, Math.min(innerWidth, bScroll.right) - b.width - 40);
+    const y = Math.min(info.bounds.bottom, Math.min(innerHeight, bScroll.bottom) - b.height - 20);
     info.el.style.left = x + scrollX + 'px';
     info.el.style.top = y + scrollY + 'px';
   }
