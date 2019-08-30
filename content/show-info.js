@@ -162,8 +162,8 @@
     if (!bScroll.height)
       bScroll = {bottom: scrollY + innerHeight, right: bScroll.right};
     const b = el.getBoundingClientRect();
-    const x = Math.min(bounds.left, Math.min(innerWidth, bScroll.right) - b.width - 40);
-    const y = Math.min(bounds.bottom, Math.min(innerHeight, bScroll.bottom) - b.height - 20);
+    const x = clamp(bounds.left, 10, Math.min(innerWidth, bScroll.right) - b.width - 20);
+    const y = clamp(bounds.bottom, 10, Math.min(innerHeight, bScroll.bottom) - b.height - 10);
     style.setProperty('left', x + scrollX + 'px', 'important');
     style.setProperty('top', y + scrollY + 'px', 'important');
 
@@ -227,6 +227,10 @@
 
   function tl(s) {
     return chrome.i18n.getMessage(s);
+  }
+
+  function clamp(v, min, max) {
+    return v < min ? min : v > max ? max : v;
   }
 
   function $make(tag, props) {
