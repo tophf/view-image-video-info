@@ -4,12 +4,11 @@
   let uiStyle;
 
   window[Symbol.for('showInfo')] = showInfo;
-  showInfo();
+  return showInfo();
 
-  async function showInfo() {
+  function showInfo() {
     const info = window[Symbol.for('info')];
-    if (!uiStyle)
-      await loadStyle();
+    let bgRequest;
 
     // remove old UI
     for (const el of document.getElementsByClassName(chrome.runtime.id))
@@ -22,20 +21,32 @@
     if (/^data:.*?base64/.test(info.src)) {
       info.type = info.src.split(/[/;]/, 2).pop().toUpperCase();
       info.size = info.src.split(';').pop().length / 6 * 8 | 0;
-      info.ready = true;
       renderFileMeta(info);
     } else {
-      // renders asynchronously *after* the UI is shown
-      fetchImageMeta(info).then(renderFileMeta);
+      bgRequest = info.src;
+      chrome.runtime.onMessage.addListener(function onMessage(data) {
+        chrome.runtime.onMessage.removeListener(onMessage);
+        renderFileMeta(Object.assign(info, data));
+      });
     }
 
-    // note: still invisible here
-    document.body.appendChild(info.el);
+    Promise.resolve(uiStyle || loadStyle()).then(() => {
+      let style;
+      const root = info.el.shadowRoot;
+      if (root.adoptedStyleSheets) {
+        style = new CSSStyleSheet();
+        style.replaceSync(':host {}');
+        root.adoptedStyleSheets = [uiStyle, style];
+      } else {
+        style = $make('style', ':host {}');
+        root.append(uiStyle.cloneNode(true), style);
+      }
+      document.body.appendChild(info.el);
+      info.style = (style.sheet || style).cssRules[0].style;
+      adjustUI(info);
+    });
 
-    // now that it's in DOM we can set up a quick access to the :host{} style tweaks
-    info.style = (info.style.sheet || info.style).cssRules[0].style;
-
-    adjustUI(info);
+    return bgRequest;
   }
 
   async function loadStyle() {
@@ -54,16 +65,7 @@
     const isImage = img.localName === 'img';
     const altTitle = [alt, title].filter(Boolean).join(' / ');
     const el = $make('div', {img, className: chrome.runtime.id});
-    const root = el.attachShadow({mode: 'open'});
-    if (root.adoptedStyleSheets) {
-      info.style = new CSSStyleSheet();
-      info.style.replaceSync(':host {}');
-      root.adoptedStyleSheets = [uiStyle, info.style];
-    } else {
-      info.style = $make('style', ':host {}');
-      root.append(uiStyle.cloneNode(true), info.style);
-    }
-    root.append(
+    el.attachShadow({mode: 'open'}).append(
       $make('main', [
         $make('div', {
           id: 'close',
@@ -188,27 +190,6 @@
     requestAnimationFrame(() => {
       const elUrl = el.shadowRoot.getElementById('url');
       elUrl.style.maxWidth = elUrl.parentNode.offsetWidth + 'px';
-    });
-  }
-
-  function fetchImageMeta(info) {
-    return new Promise(resolve => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('HEAD', info.src);
-      xhr.timeout = 10e3;
-      xhr.ontimeout = xhr.onerror = xhr.onreadystatechange = e => {
-        if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
-          info.size = xhr.getResponseHeader('Content-Length') | 0;
-          info.type = xhr.getResponseHeader('Content-Type');
-        } else if (xhr.status >= 300 || e.type === 'timeout' || e.type === 'error') {
-          info.error = true;
-        } else {
-          return;
-        }
-        info.ready = true;
-        resolve(info);
-      };
-      xhr.send();
     });
   }
 

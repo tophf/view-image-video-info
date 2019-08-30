@@ -22,13 +22,13 @@ chrome.runtime.onInstalled.addListener(() => {
     id: 'info',
     contexts: ['image', 'video'],
     documentUrlPatterns: ['*://*/*', 'file://*/*'],
-  }, () => chrome.runtime.lastError);
+  }, ignoreLastError);
   chrome.contextMenus.create({
     ...opts,
     id: 'link',
     contexts: ['link'],
     documentUrlPatterns: ['https://imgur.com/*'],
-  }, () => chrome.runtime.lastError);
+  }, ignoreLastError);
 });
 
 chrome.contextMenus.onClicked.addListener(({frameId}, tab) => {
@@ -37,12 +37,14 @@ chrome.contextMenus.onClicked.addListener(({frameId}, tab) => {
     matchAboutBlank: true,
     runAt: 'document_start',
   };
-  chrome.tabs.executeScript(tab.id, {
-    code: 'try { window[Symbol.for("showInfo")](), true } catch (e) {}',
-    ...opts,
-  }, done => {
-    if (!chrome.runtime.lastError && !done[0])
-      chrome.tabs.executeScript(tab.id, {file: '/content/show-info.js', ...opts});
+  const TRY_SHOW_INFO = 'try { window[Symbol.for("showInfo")]() } catch (e) {}';
+  chrome.tabs.executeScript(tab.id, {code: TRY_SHOW_INFO, ...opts}, ([src] = []) => {
+    if (src) {
+      fetchInfo(src, tab.id, frameId);
+    } else if (!chrome.runtime.lastError) {
+      chrome.tabs.executeScript(tab.id, {file: '/content/show-info.js', ...opts}, ([src2] = []) =>
+        src2 && fetchInfo(src2, tab.id, frameId));
+    }
   });
 });
 
@@ -52,5 +54,33 @@ function contentScriptInit(tabId, frameId) {
     matchAboutBlank: true,
     runAt: 'document_start',
     ...(frameId >= 0 ? {frameId} : {allFrames: true}),
-  }, () => chrome.runtime.lastError);
+  }, ignoreLastError);
+}
+
+function fetchInfo(src, tabId, frameId) {
+  const xhr = new XMLHttpRequest();
+  try {
+    xhr.open('HEAD', /^https?:\/\//.test(src) ? src : '///throw');
+  } catch (e) {
+    return;
+  }
+  xhr.timeout = 10e3;
+  xhr.ontimeout = xhr.onerror = xhr.onreadystatechange = e => {
+    const info = {};
+    if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
+      info.size = xhr.getResponseHeader('Content-Length') | 0;
+      info.type = xhr.getResponseHeader('Content-Type');
+    } else if (xhr.status >= 300 || e.type === 'timeout' || e.type === 'error') {
+      info.error = true;
+    } else {
+      return;
+    }
+    chrome.tabs.sendMessage(tabId, info, {frameId}, ignoreLastError);
+  };
+  xhr.send();
+  return true;
+}
+
+function ignoreLastError() {
+  return chrome.runtime.lastError;
 }
