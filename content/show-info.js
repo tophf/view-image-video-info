@@ -94,7 +94,7 @@
               $make('b', w && h ? `${w} x ${h} px` : ''),
               $make('i', {
                 textContent: dw && dh && dw !== w && dh !== h ?
-                  ` (${tl('scaledTo')} ${dw} x ${dh} px)` :
+                  ` (${tl('scaledTo')} ${formatNumber(dw)} x ${formatNumber(dh)} px)` :
                   '',
               }),
             ]),
