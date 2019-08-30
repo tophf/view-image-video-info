@@ -8,11 +8,8 @@
   "bytes": {
     "message": "bytes"
   },
-  "contextMenuImage": {
-    "message": "View image info"
-  },
-  "contextMenuVideo": {
-    "message": "View video info"
+  "contextMenu": {
+    "message": "View image/video info"
   },
   "description": {
     "message": "Context menu for viewing image/video info (URL, dimensions, file size and type)"

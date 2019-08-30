@@ -8,25 +8,34 @@
 
   async function showInfo() {
     const info = window[Symbol.for('info')];
-
     if (!uiStyle)
       await loadStyle();
 
-    const el = info.el = createUI(info);
+    // remove old UI
+    for (const el of document.getElementsByClassName(chrome.runtime.id))
+      if (el.img === info.img)
+        el.remove();
 
-    const isBase64 = /^data:.*?base64/.test(info.src);
-    (isBase64 ? setBase64Meta : fetchImageMeta)(info)
-      .then(renderFileMeta);
+    createUI(info);
 
-    document.body.appendChild(el);
+    // get size/type
+    if (/^data:.*?base64/.test(info.src)) {
+      info.type = info.src.split(/[/;]/, 2).pop().toUpperCase();
+      info.size = info.src.split(';').pop().length / 6 * 8 | 0;
+      info.ready = true;
+      renderFileMeta(info);
+    } else {
+      // renders asynchronously *after* the UI is shown
+      fetchImageMeta(info).then(renderFileMeta);
+    }
+
+    // note: still invisible here
+    document.body.appendChild(info.el);
+
+    // now that it's in DOM we can set up a quick access to the :host{} style tweaks
     info.style = (info.style.sheet || info.style).cssRules[0].style;
-    setupPosition(info);
-    setupAutoFadeOut(info);
 
-    requestAnimationFrame(() => {
-      const elUrl = el.shadowRoot.getElementById('url');
-      elUrl.style.maxWidth = elUrl.parentNode.offsetWidth + 'px';
-    });
+    adjustUI(info);
   }
 
   async function loadStyle() {
@@ -41,12 +50,9 @@
   }
 
   function createUI(info) {
-    const {img, src, w, h, dw, dh, alt, title} = info;
+    const {img, src, w, h, alt, title, bounds: {width: dw, height: dh}} = info;
     const isImage = img.localName === 'img';
     const altTitle = [alt, title].filter(Boolean).join(' / ');
-    for (const el of document.getElementsByClassName(chrome.runtime.id))
-      if (el.img === img)
-        el.remove();
     const el = $make('div', {img, className: chrome.runtime.id});
     const root = el.attachShadow({mode: 'open'});
     if (root.adoptedStyleSheets) {
@@ -115,40 +121,11 @@
         ]),
       ])
     );
-    return el;
+    info.el = el;
   }
 
-  function setupAutoFadeOut({el, style}) {
-    let fadeOutTimer;
-    el.onmouseleave = () => {
-      style.setProperty('transition-duration', '5s', 'important');
-      style.setProperty('opacity', '0', 'important');
-      fadeOutTimer = setTimeout(() => el.remove(), 5e3);
-    };
-    el.onmouseenter = () => {
-      clearTimeout(fadeOutTimer);
-      style.setProperty('opacity', 1, 'important');
-      style.setProperty('transition-duration', '.15s', 'important');
-    };
-    if (!el.matches(':hover')) {
-      el.onmouseenter();
-      fadeOutTimer = setTimeout(el.onmouseleave, 5e3);
-    }
-  }
-
-  function setupPosition({el, bounds, style}) {
-    let bScroll = document.scrollingElement.getBoundingClientRect();
-    if (!bScroll.height)
-      bScroll = {bottom: scrollY + innerHeight, right: bScroll.right};
-    const b = el.getBoundingClientRect();
-    const x = Math.min(bounds.left, Math.min(innerWidth, bScroll.right) - b.width - 40);
-    const y = Math.min(bounds.bottom, Math.min(innerHeight, bScroll.bottom) - b.height - 20);
-    style.setProperty('left', x + scrollX + 'px', 'important');
-    style.setProperty('top', y + scrollY + 'px', 'important');
-  }
-
-  function renderFileMeta(info) {
-    let {size, type, el} = info;
+  function renderFileMeta({size, type, el}) {
+    // size
     const elSize = el.shadowRoot.getElementById('size');
     if (size) {
       let unit;
@@ -170,6 +147,7 @@
       elSize.closest('tr').remove();
     }
 
+    // type
     const elType = el.shadowRoot.getElementById('type');
     type = (type || '').split('/', 2).pop().toUpperCase();
     if (type && type !== 'HTML')
@@ -178,13 +156,39 @@
       elType.closest('tr').remove();
   }
 
-  function setBase64Meta(info) {
-    Object.assign(info, {
-      type: info.src.split(/[/;]/, 2).pop().toUpperCase(),
-      size: info.src.split(';').pop().length / 6 * 8 | 0,
-      ready: true,
+  function adjustUI({el, bounds, style}) {
+    // set position
+    let bScroll = document.scrollingElement.getBoundingClientRect();
+    if (!bScroll.height)
+      bScroll = {bottom: scrollY + innerHeight, right: bScroll.right};
+    const b = el.getBoundingClientRect();
+    const x = Math.min(bounds.left, Math.min(innerWidth, bScroll.right) - b.width - 40);
+    const y = Math.min(bounds.bottom, Math.min(innerHeight, bScroll.bottom) - b.height - 20);
+    style.setProperty('left', x + scrollX + 'px', 'important');
+    style.setProperty('top', y + scrollY + 'px', 'important');
+
+    // set auto-fadeout
+    let fadeOutTimer;
+    el.onmouseleave = () => {
+      style.setProperty('transition-duration', '5s', 'important');
+      style.setProperty('opacity', '0', 'important');
+      fadeOutTimer = setTimeout(() => el.remove(), 5e3);
+    };
+    el.onmouseenter = () => {
+      clearTimeout(fadeOutTimer);
+      style.setProperty('opacity', 1, 'important');
+      style.setProperty('transition-duration', '.15s', 'important');
+    };
+    if (!el.matches(':hover')) {
+      el.onmouseenter();
+      fadeOutTimer = setTimeout(el.onmouseleave, 5e3);
+    }
+
+    // expand URL width to fill the entire cell
+    requestAnimationFrame(() => {
+      const elUrl = el.shadowRoot.getElementById('url');
+      elUrl.style.maxWidth = elUrl.parentNode.offsetWidth + 'px';
     });
-    return {then: cb => cb(info)};
   }
 
   function fetchImageMeta(info) {
@@ -212,15 +216,15 @@
     return Number(n).toLocaleString(undefined, {maximumFractionDigits: 1});
   }
 
-  function tl(s) {
-    return chrome.i18n.getMessage(s);
-  }
-
   function formatDuration({duration}) {
     return new Date(0, 0, 0, 0, 0, duration | 0)
       .toLocaleTimeString(undefined, {hourCycle: 'h24'})
       // strip 00:0 at the beginning but leave one 0 for minutes so it looks like 0:07
       .replace(/^0+:0?/, '');
+  }
+
+  function tl(s) {
+    return chrome.i18n.getMessage(s);
   }
 
   function $make(tag, props) {
