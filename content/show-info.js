@@ -217,7 +217,9 @@
   }
 
   function formatDuration({duration}) {
-    return new Date(0, 0, 0, 0, 0, duration | 0)
+    if (duration < 1)
+      return '0:0' + duration.toFixed(2);
+    return new Date(0, 0, 0, 0, 0, Math.round(Number(duration)) | 0)
       .toLocaleTimeString(undefined, {hourCycle: 'h24'})
       // strip 00:0 at the beginning but leave one 0 for minutes so it looks like 0:07
       .replace(/^0+:0?/, '');
