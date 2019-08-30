@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 chrome.tabs.onActivated.addListener(({tabId}) => {
   contentScriptInit(tabId);
@@ -14,7 +14,7 @@ chrome.runtime.onConnect.addListener(port => {
     const type = port.name === 'IMG' ? 'Image' : 'Video';
     addContextMenu(type, 'link');
   } else {
-    chrome.contextMenus.remove('link');
+    chrome.contextMenus.remove('link', ignoreLastError);
   }
 });
 
