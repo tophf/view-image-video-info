@@ -19,9 +19,9 @@
       .then(renderFileMeta);
 
     document.body.appendChild(el);
+    info.style = (info.style.sheet || info.style).cssRules[0].style;
     setupPosition(info);
     setupAutoFadeOut(info);
-    el.style.opacity = 1;
 
     requestAnimationFrame(() => {
       const elUrl = el.shadowRoot.getElementById('url');
@@ -49,10 +49,14 @@
         el.remove();
     const el = $make('div', {img, className: chrome.runtime.id});
     const root = el.attachShadow({mode: 'open'});
-    if (root.adoptedStyleSheets)
-      root.adoptedStyleSheets = [uiStyle];
-    else
-      root.appendChild(uiStyle.cloneNode(true));
+    if (root.adoptedStyleSheets) {
+      info.style = new CSSStyleSheet();
+      info.style.replaceSync(':host {}');
+      root.adoptedStyleSheets = [uiStyle, info.style];
+    } else {
+      info.style = $make('style', ':host {}');
+      root.append(uiStyle.cloneNode(true), info.style);
+    }
     root.append(
       $make('main', [
         $make('div', {
@@ -114,31 +118,33 @@
     return el;
   }
 
-  function setupAutoFadeOut({el}) {
+  function setupAutoFadeOut({el, style}) {
     let fadeOutTimer;
     el.onmouseleave = () => {
-      el.style.transitionDuration = '5s';
-      el.style.opacity = '0';
+      style.setProperty('transition-duration', '5s', 'important');
+      style.setProperty('opacity', '0', 'important');
       fadeOutTimer = setTimeout(() => el.remove(), 5e3);
     };
     el.onmouseenter = () => {
       clearTimeout(fadeOutTimer);
-      el.style.opacity = 1;
-      el.style.transitionDuration = '.1s';
+      style.setProperty('opacity', 1, 'important');
+      style.setProperty('transition-duration', '.15s', 'important');
     };
-    if (!el.matches(':hover'))
+    if (!el.matches(':hover')) {
+      el.onmouseenter();
       fadeOutTimer = setTimeout(el.onmouseleave, 5e3);
+    }
   }
 
-  function setupPosition(info) {
+  function setupPosition({el, bounds, style}) {
     let bScroll = document.scrollingElement.getBoundingClientRect();
     if (!bScroll.height)
       bScroll = {bottom: scrollY + innerHeight, right: bScroll.right};
-    const b = info.el.getBoundingClientRect();
-    const x = Math.min(info.bounds.left, Math.min(innerWidth, bScroll.right) - b.width - 40);
-    const y = Math.min(info.bounds.bottom, Math.min(innerHeight, bScroll.bottom) - b.height - 20);
-    info.el.style.left = x + scrollX + 'px';
-    info.el.style.top = y + scrollY + 'px';
+    const b = el.getBoundingClientRect();
+    const x = Math.min(bounds.left, Math.min(innerWidth, bScroll.right) - b.width - 40);
+    const y = Math.min(bounds.bottom, Math.min(innerHeight, bScroll.bottom) - b.height - 20);
+    style.setProperty('left', x + scrollX + 'px', 'important');
+    style.setProperty('top', y + scrollY + 'px', 'important');
   }
 
   function renderFileMeta(info) {

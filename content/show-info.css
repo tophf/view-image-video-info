@@ -1,11 +1,11 @@
 :host {
-  all: initial;
-  opacity: 0;
-  transition: opacity .1s cubic-bezier(.88, .02, .92, .66);
-  box-sizing: border-box;
-  position: absolute;
-  box-shadow: 3px 4px 20px rgba(0, 0, 0, 0.5);
-  z-index: 2147483647;
+  all: initial !important;
+  opacity: 0 !important;
+  transition: opacity .15s cubic-bezier(.88, .02, .92, .66) !important;
+  box-sizing: border-box !important;
+  position: absolute !important;
+  box-shadow: 3px 4px 20px rgba(0, 0, 0, 0.5) !important;
+  z-index: 2147483647 !important;
 }
 main {
   background-color: papayawhip;
