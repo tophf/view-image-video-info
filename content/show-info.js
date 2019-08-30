@@ -1,7 +1,7 @@
 'use strict';
 
 !window[Symbol.for('showInfo')] && (() => {
-  let uiStyle;
+  let uiStyle, pushStateEventId;
 
   window[Symbol.for('showInfo')] = showInfo;
   return showInfo();
@@ -10,11 +10,7 @@
     const info = window[Symbol.for('info')];
     let bgRequest;
 
-    // remove old UI
-    for (const el of document.getElementsByClassName(chrome.runtime.id))
-      if (el.img === info.img)
-        el.remove();
-
+    removeAll(info);
     createUI(info);
 
     // get size/type
@@ -158,7 +154,7 @@
       elType.closest('tr').remove();
   }
 
-  function adjustUI({el, bounds, style}) {
+  function adjustUI({el, img, bounds, style}) {
     // set position
     let bScroll = document.scrollingElement.getBoundingClientRect();
     if (!bScroll.height)
@@ -174,7 +170,7 @@
     el.onmouseleave = () => {
       style.setProperty('transition-duration', '5s', 'important');
       style.setProperty('opacity', '0', 'important');
-      fadeOutTimer = setTimeout(() => el.remove(), 5e3);
+      fadeOutTimer = setTimeout(removeAll, 5e3, {img});
     };
     el.onmouseenter = () => {
       clearTimeout(fadeOutTimer);
@@ -191,6 +187,40 @@
       const elUrl = el.shadowRoot.getElementById('url');
       elUrl.style.maxWidth = elUrl.parentNode.offsetWidth + 'px';
     });
+
+    // detect SPA navigation
+    if (!pushStateEventId)
+      setupPushStateDetector(arguments);
+    window.addEventListener(pushStateEventId, removeAll);
+    window.addEventListener('hashchange', removeAll);
+    window.addEventListener('popstate', removeAll);
+  }
+
+  function setupPushStateDetector() {
+    pushStateEventId = chrome.runtime.id + '.' + performance.now();
+    document.head.appendChild(
+      $make('script', `(${
+        eventId => {
+          document.currentScript.remove();
+          const fn = history.pushState;
+          history.pushState = function () {
+            window.dispatchEvent(new Event(eventId));
+            return fn.apply(this, arguments);
+          };
+        }
+      })('${pushStateEventId}')`));
+  }
+
+  function removeAll({img} = {}) {
+    const all = document.getElementsByClassName(chrome.runtime.id);
+    for (const el of all)
+      if (!img || el.img === img)
+        el.remove();
+    if (!all[0]) {
+      window.removeEventListener('hashchange', removeAll);
+      window.removeEventListener('popstate', removeAll);
+      window.removeEventListener(pushStateEventId, removeAll);
+    }
   }
 
   function formatNumber(n) {
