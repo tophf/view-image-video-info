@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 chrome.tabs.onActivated.addListener(({tabId}) => {
   contentScriptInit(tabId);
@@ -20,10 +20,9 @@ chrome.runtime.onConnect.addListener(port => {
 
 chrome.runtime.onInstalled.addListener(() => {
   contentScriptInit(null);
+  for (const type of ['Image', 'Video'])
+    addContextMenu(type);
 });
-
-for (const type of ['Image', 'Video'])
-  addContextMenu(type);
 
 chrome.contextMenus.onClicked.addListener(({frameId}, tab) => {
   const opts = {frameId, matchAboutBlank: true, runAt: 'document_start'};
