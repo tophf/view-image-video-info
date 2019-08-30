@@ -1,5 +1,7 @@
 ### A fork of [View-Image-Info-Chrome](https://github.com/ehaagwlke/View-Image-Info-Chrome) extension
 
+<img align="right" src="https://i.imgur.com/cFUhk4B.png" alt="logo">
+
 Major changes:
  
 * google analytics is removed
@@ -17,6 +19,7 @@ Minor changes:
 * network request for the info is now a pure HEAD query
 * almost all visible text was slightly reworded
 * the UI was slightly restyled
+* the icon was redrawn using a shutter image by [Freepik](https://www.flaticon.com/authors/freepik) as a base
 
 ![ui](https://i.imgur.com/tWZGFGE.png)
 
