@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 chrome.tabs.onActivated.addListener(({tabId}) => {
   contentScriptInit(tabId);
@@ -6,7 +6,7 @@ chrome.tabs.onActivated.addListener(({tabId}) => {
 
 chrome.webNavigation.onCommitted.addListener(({tabId, frameId}) => {
   chrome.tabs.get(tabId, tab => {
-    if (tab.active)
+    if (!chrome.runtime.lastError && tab.active)
       contentScriptInit(tabId, frameId);
   });
 });
