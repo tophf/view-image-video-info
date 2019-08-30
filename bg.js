@@ -27,7 +27,10 @@ chrome.runtime.onInstalled.addListener(() => {
     ...opts,
     id: 'link',
     contexts: ['link'],
-    documentUrlPatterns: ['https://imgur.com/*'],
+    documentUrlPatterns: [
+      'https://imgur.com/*',
+      'https://www.facebook.com/*',
+    ],
   }, ignoreLastError);
 });
 
