@@ -74,54 +74,44 @@
           },
         }),
         $make('table', [
+          ['location', [
+            ['a', {
+              id: 'url',
+              href: src,
+              title: src,
+              textContent: src,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+            }],
+          ]],
+          ['dimensions', [
+            ['b', w && h ? `${w} x ${h} px` : ''],
+            ['i', dw && dh && dw !== w && dh !== h ?
+              ` (${tl('scaledTo')} ${formatNumber(dw)} x ${formatNumber(dh)} px)` :
+              ''],
+          ]],
+          ['fileType', [
+            ['b', {id: 'type'}],
+            ['span', ' ' + tl(`type${isImage ? 'Image' : 'Video'}`)],
+            ['span', isImage ? '' : `, ${formatDuration(info)}`],
+          ]],
+          ['fileSize', [
+            ['b', {id: 'size'}],
+            ['i', {id: 'bytes'}],
+          ]],
+          alt && ['alt', [
+            ['div', {id: 'alt', textContent: alt}],
+          ]],
+          title && ['title', [
+            ['div', {id: 'title', textContent: title}],
+          ]],
+        ].map(([tlKey, children] = []) =>
+          tlKey &&
           $make('tr', [
-            $make('td', tl('location')),
-            $make('td', [
-              $make('a', {
-                id: 'url',
-                href: src,
-                title: src,
-                textContent: src,
-                target: '_blank',
-                rel: 'noopener noreferrer',
-              }),
-            ]),
-          ]),
-          $make('tr', [
-            $make('td', tl('dimensions')),
-            $make('td', [
-              $make('b', w && h ? `${w} x ${h} px` : ''),
-              $make('i', {
-                textContent: dw && dh && dw !== w && dh !== h ?
-                  ` (${tl('scaledTo')} ${formatNumber(dw)} x ${formatNumber(dh)} px)` :
-                  '',
-              }),
-            ]),
-          ]),
-          $make('tr', [
-            $make('td', tl('fileType')),
-            $make('td', [
-              $make('b', {id: 'type'}),
-              $make('span', ' ' + tl(`type${isImage ? 'Image' : 'Video'}`)),
-              $make('span', isImage ? '' : `, ${formatDuration(info)}`),
-            ]),
-          ]),
-          $make('tr', [
-            $make('td', tl('fileSize')),
-            $make('td', [
-              $make('b', {id: 'size'}),
-              $make('i', {id: 'bytes'}),
-            ]),
-          ]),
-          alt && $make('tr', [
-            $make('td', tl('alt')),
-            $make('td', {id: 'alt', textContent: alt}),
-          ]),
-          title && $make('tr', [
-            $make('td', tl('title')),
-            $make('td', {id: 'title', textContent: title}),
-          ]),
-        ]),
+            $make('td', tl(tlKey)),
+            $make('td', children.map(data => $make(...data))),
+          ]))
+        ),
       ])
     );
     info.el = el;
