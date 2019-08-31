@@ -61,7 +61,6 @@
   function createUI(info) {
     const {img, src, w, h, alt, title, bounds: {width: dw, height: dh}} = info;
     const isImage = img.localName === 'img';
-    const altTitle = [alt, title].filter(Boolean).join(' / ');
     const el = $make('div', {img, className: chrome.runtime.id});
     el.attachShadow({mode: 'open'}).append(
       $make('main', [
@@ -114,9 +113,13 @@
               $make('i', {id: 'bytes'}),
             ]),
           ]),
-          altTitle && $make('tr', [
+          alt && $make('tr', [
             $make('td', tl('alt')),
-            $make('td', altTitle),
+            $make('td', {id: 'alt', textContent: alt}),
+          ]),
+          title && $make('tr', [
+            $make('td', tl('title')),
+            $make('td', {id: 'title', textContent: title}),
           ]),
         ]),
       ])

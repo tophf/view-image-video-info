@@ -57,6 +57,16 @@ a:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+#alt, #title {
+  max-width: 50vw;
+  white-space: normal;
+  line-height: 1.2;
+}
+@media (min-width: 500px) {
+  #alt, #title {
+    max-width: 20em;
+  }
+}
 #close {
   cursor: pointer;
   padding: .5ex 1ex;

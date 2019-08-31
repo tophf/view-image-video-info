@@ -1,6 +1,6 @@
 {
   "alt": {
-    "message": "Alt / title"
+    "message": "Alt"
   },
   "author": {
     "message": "tophf + Dingbao.ai[aka. ehaagwlke]"
@@ -31,6 +31,9 @@
   },
   "scaledTo": {
     "message": "scaled to"
+  },
+  "title": {
+    "message": "Title"
   },
   "typeImage": {
     "message": "image"
