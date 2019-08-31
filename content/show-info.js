@@ -1,7 +1,7 @@
 'use strict';
 
 !window[Symbol.for('showInfo')] && (() => {
-  let uiStyle, pushStateEventId;
+  let uiStyle;
 
   window[Symbol.for('showInfo')] = showInfo;
   return showInfo();
@@ -70,7 +70,7 @@
           onclick: event => {
             event.preventDefault();
             event.stopImmediatePropagation();
-            el.remove();
+            removeAll({img});
           },
         }),
         $make('table', [
@@ -184,37 +184,21 @@
     });
 
     // detect SPA navigation
-    if (!pushStateEventId)
-      setupPushStateDetector(arguments);
-    window.addEventListener(pushStateEventId, removeAll);
     window.addEventListener('hashchange', removeAll);
-    window.addEventListener('popstate', removeAll);
-  }
-
-  function setupPushStateDetector() {
-    pushStateEventId = chrome.runtime.id + '.' + performance.now();
-    document.head.appendChild(
-      $make('script', `(${
-        eventId => {
-          document.currentScript.remove();
-          const fn = history.pushState;
-          history.pushState = function () {
-            window.dispatchEvent(new Event(eventId));
-            return fn.apply(this, arguments);
-          };
-        }
-      })('${pushStateEventId}')`));
+    chrome.runtime.onConnect.addListener(removeAll);
   }
 
   function removeAll({img} = {}) {
     const all = document.getElementsByClassName(chrome.runtime.id);
-    for (const el of all)
+    const wasShown = all[0];
+    for (const el of all) {
       if (!img || el.img === img)
         el.remove();
-    if (!all[0]) {
+    }
+    if (wasShown && !all[0]) {
       window.removeEventListener('hashchange', removeAll);
-      window.removeEventListener('popstate', removeAll);
-      window.removeEventListener(pushStateEventId, removeAll);
+      chrome.runtime.onConnect.removeListener(removeAll);
+      chrome.runtime.connect({name: 'naviStop'});
     }
   }
 
