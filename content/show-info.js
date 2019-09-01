@@ -190,10 +190,13 @@
 
   function removeAll({img} = {}) {
     const all = document.getElementsByClassName(chrome.runtime.id);
-    const wasShown = all[0];
-    for (const el of all) {
-      if (!img || el.img === img)
+    const wasShown = Boolean(all[0]);
+    // since it's a live collection we need to work on a static copy
+    for (const el of [...all]) {
+      if (!img || el.img === img) {
+        el.shadowRoot.adoptedStyleSheets = [];
         el.remove();
+      }
     }
     if (wasShown && !all[0]) {
       window.removeEventListener('hashchange', removeAll);
