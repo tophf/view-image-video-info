@@ -22,7 +22,7 @@ async function fetchInfo(src, tabId, frameId) {
     } else {
       return;
     }
-    chrome.tabs.sendMessage(tabId, info, {frameId}, ignoreLastError);
+    chrome.tabs.sendMessage(tabId, {info}, {frameId}, ignoreLastError);
     if (spoofer)
       chrome.webRequest.onBeforeSendHeaders.removeListener(spoofer);
   };

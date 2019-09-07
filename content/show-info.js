@@ -9,7 +9,7 @@ typeof window.showInfo !== 'function' && (() => {
   function showInfo() {
     let bgRequest;
     const info = window[Symbol.for('info')];
-    if (!info)
+    if (!info || !info.img)
       return;
 
     removeAll(info);
@@ -23,8 +23,10 @@ typeof window.showInfo !== 'function' && (() => {
     } else {
       bgRequest = info.src;
       chrome.runtime.onMessage.addListener(function onMessage(data) {
-        chrome.runtime.onMessage.removeListener(onMessage);
-        renderFileMeta(Object.assign(info, data));
+        if (data && data.info) {
+          chrome.runtime.onMessage.removeListener(onMessage);
+          renderFileMeta(Object.assign(info, data.info));
+        }
       });
     }
 

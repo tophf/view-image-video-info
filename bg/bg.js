@@ -17,8 +17,20 @@ chrome.contextMenus.onClicked.addListener(async ({frameId}, tab) => {
     (await import('./bg-xhr.js')).fetchInfo(r[0], tab.id, frameId);
 });
 
-chrome.tabs.onActivated.addListener(({tabId}) => {
-  contentScriptInit(tabId);
+chrome.tabs.onActivated.addListener(async ({tabId}) => {
+  const framesCount = await ping(tabId, 0);
+  if (framesCount === 0)
+    return;
+  if (!framesCount) {
+    contentScriptInit(tabId);
+    return;
+  }
+  // ping each frame and run a content script if there's no response
+  chrome.webNavigation.getAllFrames({tabId}, async frames => {
+    for (const {frameId} of chrome.runtime.lastError ? [] : frames)
+      if (frameId && !await ping(tabId, frameId))
+        contentScriptInit(tabId, frameId);
+  });
 });
 
 chrome.webNavigation.onCommitted.addListener(({tabId, frameId}) => {
@@ -28,6 +40,14 @@ chrome.webNavigation.onCommitted.addListener(({tabId, frameId}) => {
       contentScriptInit(tabId, frameId);
   });
 });
+
+function ping(tabId, frameId) {
+  return new Promise(resolve => {
+    chrome.tabs.sendMessage(tabId, 'ping', {frameId}, data => {
+      resolve(!chrome.runtime.lastError && data);
+    });
+  });
+}
 
 function contentScriptInit(tabId, frameId) {
   chrome.tabs.executeScript(tabId, {
