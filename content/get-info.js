@@ -19,8 +19,8 @@
     window[key] = img && {
       img,
       src: img.src || img.currentSrc,
-      alt: img.alt,
-      title: img.title,
+      alt: img.alt.trim(),
+      title: img.title.trim(),
       duration: img.duration,
       bounds: img.getBoundingClientRect(),
       w: img.naturalWidth || img.videoWidth,
