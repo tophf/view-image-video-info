@@ -2,8 +2,8 @@ export {fetchInfo};
 import {ignoreLastError} from './bg.js';
 
 async function fetchInfo(src, tabId, frameId) {
-  await new Promise(resolve =>
-    chrome.permissions.request({permissions: ['webRequest', 'webRequestBlocking']}, resolve));
+  if (!chrome.webRequest)
+    await enableWebRequest();
   const spoofer = chrome.webRequest && spoofReferer(src);
   const xhr = new XMLHttpRequest();
   try {
@@ -49,4 +49,14 @@ function spoofReferer(src) {
   ].filter(Boolean);
   chrome.webRequest.onBeforeSendHeaders.addListener(spoofer, filter, extras);
   return spoofer;
+}
+
+function enableWebRequest() {
+  return new Promise(resolve =>
+    chrome.permissions.request({
+      permissions: [
+        'webRequest',
+        'webRequestBlocking',
+      ],
+    }, resolve));
 }
