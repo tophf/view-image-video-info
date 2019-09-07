@@ -7,10 +7,7 @@ chrome.contextMenus.onClicked.addListener(async ({frameId}, tab) => {
     matchAboutBlank: true,
     runAt: 'document_start',
   };
-  let r = await exec(tab.id, {
-    code: 'try { window[Symbol.for("showInfo")]() } catch (e) {}',
-    ...opts,
-  });
+  let r = await exec(tab.id, {code: `(${tryShowInfo})()`, ...opts});
   if (!r)
     return;
   navi.enlist(tab.id, frameId, tab.url);
@@ -39,6 +36,12 @@ function contentScriptInit(tabId, frameId) {
     runAt: 'document_start',
     ...(frameId >= 0 ? {frameId} : {allFrames: true}),
   }, ignoreLastError);
+}
+
+function tryShowInfo() {
+  try {
+    return window.showInfo();
+  } catch (e) {}
 }
 
 function exec(...args) {

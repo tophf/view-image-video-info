@@ -1,9 +1,9 @@
 'use strict';
 
-!window[Symbol.for('showInfo')] && (() => {
+typeof window.showInfo !== 'function' && (() => {
   let uiStyle;
 
-  window[Symbol.for('showInfo')] = showInfo;
+  window.showInfo = showInfo;
   return showInfo();
 
   function showInfo() {
