@@ -11,7 +11,7 @@ window.dispatchEvent(new Event(chrome.runtime.id));
 
   function onMessage(msg, sender, sendResponse) {
     if (msg.src || msg.link)
-      sendResponse(showInfo(msg));
+      sendResponse(showInfo(msg) || {});
     if (msg.info) {
       const info = registry.get(msg.id);
       registry.delete(msg.id);
