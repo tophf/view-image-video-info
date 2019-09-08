@@ -1,8 +1,7 @@
-import {contentScriptInit, ignoreLastError} from './bg.js';
+import {ignoreLastError} from './bg.js';
 
 chrome.runtime.onInstalled.addListener(() => {
   localStorage.naviTargets = '';
-  contentScriptInit(null);
 
   const opts = {
     type: 'normal',

@@ -1,33 +1,102 @@
 'use strict';
 
-typeof window.showInfo !== 'function' && (() => {
+window.dispatchEvent(new Event(chrome.runtime.id));
+!chrome.runtime.onMessage.hasListeners() && (() => {
+
+  const registry = new Map();
   let uiStyle;
 
-  window.showInfo = showInfo;
-  return showInfo();
+  chrome.runtime.onMessage.addListener(onMessage);
+  window.addEventListener(chrome.runtime.id, quitWhenOrphaned);
 
-  function showInfo() {
-    let bgRequest;
-    const info = window[Symbol.for('info')];
-    if (!info || !info.img)
+  function onMessage(msg, sender, sendResponse) {
+    if (msg.src || msg.link)
+      sendResponse(showInfo(msg));
+    if (msg.info) {
+      const info = registry.get(msg.id);
+      registry.delete(msg.id);
+      info && renderFileMeta(Object.assign(info, msg.info));
+    }
+  }
+
+  function quitWhenOrphaned(event) {
+    try {
+      chrome.i18n.getUILanguage();
+    } catch (e) {
+      delete window.showInfo;
+      window.removeEventListener(event.type, quitWhenOrphaned);
+      chrome.runtime.onMessage.removeListener(onMessage);
+      for (const el of document.getElementsByClassName(event.type))
+        el.remove();
+    }
+  }
+
+  function getInfo({src, link}) {
+    const rxLast = /[^/]*\/?$/;
+    const tail = src && (src.startsWith('data:') ? src : src.match(rxLast)[0]).slice(-500);
+    const linkSel = link && `a[href$="${link.slice(-500).match(rxLast)[0]}"]`;
+    const sel = !src ? linkSel :
+      `${link ? linkSel : ''} :-webkit-any([src$="${tail}"], [srcset*="${tail}"])`;
+    const img = findClickedImage(src || link, sel, document);
+    return img && {
+      img,
+      src: img.src || img.currentSrc,
+      alt: (img.alt || '').trim(),
+      title: (img.title || '').trim(),
+      duration: img.duration,
+      bounds: img.getBoundingClientRect(),
+      w: img.naturalWidth || img.videoWidth,
+      h: img.naturalHeight || img.videoHeight,
+    };
+  }
+
+  function findClickedImage(src, selector, root) {
+    for (let el of root.querySelectorAll(selector)) {
+      const tag = el.tagName;
+      const elSrc = tag === 'A' ? el.href : el.currentSrc || el.src;
+      if (src !== elSrc)
+        continue;
+      if (tag === 'A') {
+        for (const img of el.querySelectorAll('img, video'))
+          if (isInView(img))
+            return img;
+        continue;
+      }
+      if (tag === 'SOURCE')
+        el = el.closest('video, img, picture');
+      if (isInView(el))
+        return el;
+    }
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+    for (let el; (el = walker.nextNode());)
+      if (el.shadowRoot && (el = findClickedImage(src, selector, el.shadowRoot)))
+        return el;
+  }
+
+  function isInView(el) {
+    const b = el.getBoundingClientRect();
+    return b.top < innerHeight && b.left < innerWidth && b.right > 0 && b.bottom > 0;
+  }
+
+  function showInfo(opts) {
+    const info = getInfo(opts);
+    if (!info)
       return;
 
     removeAll(info);
     createUI(info);
 
     // get size/type
-    if (/^data:.*?base64/.test(info.src)) {
-      info.type = info.src.split(/[/;]/, 2).pop().toUpperCase();
-      info.size = info.src.split(';').pop().length / 6 * 8 | 0;
+    let bgRequest;
+    const src = info.src;
+    if (/^data:.*?base64/.test(src)) {
+      info.type = src.split(/[/;]/, 2).pop().toUpperCase();
+      info.size = src.split(';').pop().length / 6 * 8 | 0;
       renderFileMeta(info);
     } else {
-      bgRequest = info.src;
-      chrome.runtime.onMessage.addListener(function onMessage(data) {
-        if (data && data.info) {
-          chrome.runtime.onMessage.removeListener(onMessage);
-          renderFileMeta(Object.assign(info, data.info));
-        }
-      });
+      const id = performance.now();
+      bgRequest = {id, src};
+      registry.set(id, info);
     }
 
     Promise.resolve(uiStyle || loadStyle()).then(() => {

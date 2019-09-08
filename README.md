@@ -7,10 +7,7 @@ Major changes:
 * google analytics is removed
 * video info is also shown
 * info is shown inside the page instead of a new window
-* content scripts usage is granular:
-  * a small detector script runs only when a tab is focused for the first time
-  * the image element is analyzed only when the context menu is invoked
-  * the main content script that shows the UI runs only when the extension is invoked from the context menu
+* content script runs only on demand when showing the info
 
 Minor changes:
 
@@ -26,8 +23,8 @@ Minor changes:
 ### Permissions:
 
 * `contextMenus` - to add the context menu, duh
-* `webNavigation` - to enable the detector script (described above) in the iframes of the active tab
-* `<all_urls>` - to remember the right image before the context menu is invoked (the API doesn't allow to retroactively get the clicked element so unfortunately the extension cannot make do with just `activeTab` permission)
+* `webNavigation` - to hide the displayed info cards on fake navigation used by modern SPA sites like youtube or twitter 
+* `<all_urls>` - to get the file size and type of the image
 
 ### How to limit the site permissions 
 

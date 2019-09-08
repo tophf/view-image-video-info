@@ -1,7 +1,7 @@
 export {fetchInfo};
 import {ignoreLastError} from './bg.js';
 
-async function fetchInfo(src, tabId, frameId) {
+async function fetchInfo({src, id}, tabId, frameId) {
   if (!chrome.webRequest)
     await enableWebRequest();
   const spoofer = chrome.webRequest && spoofReferer(src);
@@ -22,7 +22,7 @@ async function fetchInfo(src, tabId, frameId) {
     } else {
       return;
     }
-    chrome.tabs.sendMessage(tabId, {info}, {frameId}, ignoreLastError);
+    chrome.tabs.sendMessage(tabId, {id, info}, {frameId}, ignoreLastError);
     if (spoofer)
       chrome.webRequest.onBeforeSendHeaders.removeListener(spoofer);
   };
