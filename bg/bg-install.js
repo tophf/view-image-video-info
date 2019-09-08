@@ -26,6 +26,10 @@ chrome.runtime.onInstalled.addListener(() => {
       pages: ['/*'],
       links: ['/photo/*'],
     },
+    'www.instagram.com': {
+      pages: ['/*'],
+      links: ['/p/*'],
+    },
   })) {
     chrome.contextMenus.create({
       ...opts,
