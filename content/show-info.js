@@ -158,7 +158,7 @@ typeof window.showInfo !== 'function' && (() => {
     const maxW = Math.max(r1.right, r2.right, innerWidth);
     const maxH = Math.max(r1.bottom, r2.bottom, scrollY + innerHeight);
     const b = el.getBoundingClientRect();
-    const x = clamp(bounds.left, 10, Math.min(innerWidth, maxW) - b.width - 20);
+    const x = clamp(bounds.left, 10, Math.min(innerWidth, maxW) - b.width - 40);
     const y = clamp(bounds.bottom, 10, Math.min(innerHeight, maxH) - b.height - 10);
     style.setProperty('left', x + scrollX + 'px', 'important');
     style.setProperty('top', y + scrollY + 'px', 'important');
