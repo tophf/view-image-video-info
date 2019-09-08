@@ -40,7 +40,11 @@ window.dispatchEvent(new Event(chrome.runtime.id));
   function getInfo({src, link}) {
     const rxLast = /[^/]*\/?$/;
     const tail = src && (src.startsWith('data:') ? src : src.match(rxLast)[0]).slice(-500);
-    const linkSel = link && `a[href$="${link.slice(-500).match(rxLast)[0]}"]`;
+    const linkSel = link && `a[href$="${(
+      !link.startsWith(location.origin) ?
+        link.slice(link.indexOf('://') + 1) :
+        link.match(rxLast)[0]
+    ).slice(-500)}"]`;
     const sel = !src ? linkSel :
       `${link ? linkSel : ''} :-webkit-any([src$="${tail}"], [srcset*="${tail}"])`;
     const img = findClickedImage(src || link, sel, document);
@@ -69,7 +73,7 @@ window.dispatchEvent(new Event(chrome.runtime.id));
         continue;
       }
       if (tag === 'SOURCE')
-        el = el.closest('video, img, picture');
+        el = el.closest('video, picture');
       if (isInView(el))
         return el;
     }
@@ -81,7 +85,9 @@ window.dispatchEvent(new Event(chrome.runtime.id));
 
   function isInView(el) {
     const b = el.getBoundingClientRect();
-    return b.top < innerHeight && b.left < innerWidth && b.right > 0 && b.bottom > 0;
+    return b.width && b.height &&
+           b.right > 0 && b.bottom > 0 &&
+           b.top < innerHeight && b.left < innerWidth;
   }
 
   function showInfo(opts) {
