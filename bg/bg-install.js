@@ -22,6 +22,10 @@ chrome.runtime.onInstalled.addListener(() => {
       pages: ['/*'],
       links: ['/*/photos/*?type=*'],
     },
+    '500px.com': {
+      pages: ['/*'],
+      links: ['/photo/*'],
+    },
   })) {
     chrome.contextMenus.create({
       ...opts,
