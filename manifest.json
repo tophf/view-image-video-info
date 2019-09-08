@@ -16,7 +16,6 @@
   },
   "permissions": [
     "contextMenus",
-    "webNavigation",
     "activeTab",
     "<all_urls>"
   ],

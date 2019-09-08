@@ -4,7 +4,7 @@ window.dispatchEvent(new Event(chrome.runtime.id));
 !chrome.runtime.onMessage.hasListeners() && (() => {
 
   const registry = new Map();
-  let uiStyle;
+  let uiStyle, pushStateEventId;
 
   chrome.runtime.onMessage.addListener(onMessage);
   window.addEventListener(chrome.runtime.id, quitWhenOrphaned);
@@ -24,6 +24,12 @@ window.dispatchEvent(new Event(chrome.runtime.id));
       chrome.i18n.getUILanguage();
     } catch (e) {
       delete window.showInfo;
+      if (pushStateEventId)
+        runInPage(id => {
+          if (history.pushState.__eventId === id)
+            delete history.pushState;
+        }, pushStateEventId);
+      removeNavListeners();
       window.removeEventListener(event.type, quitWhenOrphaned);
       chrome.runtime.onMessage.removeListener(onMessage);
       for (const el of document.getElementsByClassName(event.type))
@@ -256,8 +262,34 @@ window.dispatchEvent(new Event(chrome.runtime.id));
     });
 
     // detect SPA navigation
+    if (!pushStateEventId) {
+      pushStateEventId = chrome.runtime.id + '.' + performance.now();
+      runInPage(setupNavDetector, pushStateEventId);
+    }
+    window.addEventListener(pushStateEventId, removeAll);
     window.addEventListener('hashchange', removeAll);
-    chrome.runtime.onConnect.addListener(removeAll);
+    window.addEventListener('popstate', removeAll);
+  }
+
+  function setupNavDetector(eventId) {
+    const fn = history.pushState;
+    history.pushState = function () {
+      window.dispatchEvent(new Event(eventId));
+      return fn.apply(this, arguments);
+    };
+    history.pushState.__eventId = eventId;
+  }
+
+  function runInPage(fn, ...args) {
+    const el = $make('script', `(${fn})(${JSON.stringify(args).slice(1, -1)})`);
+    document.head.appendChild(el);
+    el.remove();
+  }
+
+  function removeNavListeners() {
+    window.removeEventListener('hashchange', removeAll);
+    window.removeEventListener('popstate', removeAll);
+    window.removeEventListener(pushStateEventId, removeAll);
   }
 
   function removeAll({img} = {}) {
@@ -270,11 +302,8 @@ window.dispatchEvent(new Event(chrome.runtime.id));
         el.remove();
       }
     }
-    if (wasShown && !all[0]) {
-      window.removeEventListener('hashchange', removeAll);
-      chrome.runtime.onConnect.removeListener(removeAll);
-      chrome.runtime.connect({name: 'naviStop'});
-    }
+    if (wasShown && !all[0])
+      removeNavListeners();
   }
 
   function formatNumber(n) {

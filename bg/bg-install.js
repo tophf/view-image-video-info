@@ -1,8 +1,6 @@
 import {ignoreLastError} from './bg.js';
 
 chrome.runtime.onInstalled.addListener(() => {
-  localStorage.naviTargets = '';
-
   const opts = {
     type: 'normal',
     title: chrome.i18n.getMessage('contextMenu'),

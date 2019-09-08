@@ -1,5 +1,4 @@
 ﻿export {ignoreLastError};
-import * as navi from './bg-navi.js';
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const {frameId} = info;
@@ -16,11 +15,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
       frameId,
     }) &&
     await ping(tab.id, frameId, msg);
-  if (pong) {
-    navi.enlist(tab.id, frameId, tab.url);
-    if (pong.src)
-      (await import('./bg-xhr.js')).fetchInfo(pong, tab.id, frameId);
-  }
+  if (pong && pong.src)
+    (await import('./bg-xhr.js')).fetchInfo(pong, tab.id, frameId);
 });
 
 function ping(tabId, frameId, msg) {

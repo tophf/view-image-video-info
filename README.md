@@ -23,7 +23,6 @@ Minor changes:
 ### Permissions:
 
 * `contextMenus` - to add the context menu, duh
-* `webNavigation` - to hide the displayed info cards on fake navigation used by modern SPA sites like youtube or twitter 
 * `<all_urls>` - to get the file size and type of the image
 
 ### How to limit the site permissions 
