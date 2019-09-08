@@ -23,7 +23,6 @@ window.dispatchEvent(new Event(chrome.runtime.id));
     try {
       chrome.i18n.getUILanguage();
     } catch (e) {
-      delete window.showInfo;
       if (pushStateEventId)
         runInPage(id => {
           if (history.pushState.__eventId === id)
@@ -100,7 +99,7 @@ window.dispatchEvent(new Event(chrome.runtime.id));
 
     // get size/type
     let bgRequest;
-    const src = info.src;
+    const {src} = info;
     if (/^data:.*?base64/.test(src)) {
       info.type = src.split(/[/;]/, 2).pop().toUpperCase();
       info.size = src.split(';').pop().length / 6 * 8 | 0;
@@ -182,10 +181,12 @@ window.dispatchEvent(new Event(chrome.runtime.id));
             ['b', {id: 'size'}],
             ['i', {id: 'bytes'}],
           ]],
-          alt && ['alt', [
+          alt &&
+          ['alt', [
             ['div', {id: 'alt', textContent: alt}],
           ]],
-          title && ['title', [
+          title &&
+          ['title', [
             ['div', {id: 'title', textContent: title}],
           ]],
         ].map(([tlKey, children] = []) =>

@@ -7,7 +7,7 @@ Major changes:
 * google analytics is removed
 * video info is also shown
 * info is shown inside the page instead of a new window
-* content script runs only on demand when showing the info
+* content script runs only on demand when showing the info, and tries to find the clicked element retroactively
 
 Minor changes:
 
