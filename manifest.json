@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "minimum_chrome_version": "63",
   "name": "__MSG_extName__",
-  "version": "1.0",
+  "version": "1.0.1",
   "author": "__MSG_author__",
   "description": "__MSG_description__",
   "icons": {
