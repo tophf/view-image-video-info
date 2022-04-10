@@ -1,5 +1,3 @@
-import {ignoreLastError} from './bg.js';
-
 chrome.runtime.onInstalled.addListener(() => {
   const opts = {
     type: 'normal',
@@ -11,7 +9,7 @@ chrome.runtime.onInstalled.addListener(() => {
     id: 'info',
     contexts: ['image', 'video'],
     documentUrlPatterns: ['*://*/*', 'file://*/*'],
-  }, ignoreLastError);
+  });
 
   for (const [id, {pages, links}] of Object.entries({
     'imgur.com': {
@@ -37,7 +35,7 @@ chrome.runtime.onInstalled.addListener(() => {
       contexts: ['link'],
       documentUrlPatterns: pages.map(expandUrl, id),
       targetUrlPatterns: links.map(expandUrl, id),
-    }, ignoreLastError);
+    });
   }
 
   function expandUrl(s) {

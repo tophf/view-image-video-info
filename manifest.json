@@ -1,6 +1,6 @@
 ﻿{
-  "manifest_version": 2,
-  "minimum_chrome_version": "63",
+  "manifest_version": 3,
+  "minimum_chrome_version": "96",
   "name": "__MSG_extName__",
   "version": "1.0.1",
   "author": "__MSG_author__",
@@ -15,21 +15,18 @@
     "256": "icon/256.png"
   },
   "permissions": [
-    "contextMenus",
     "activeTab",
-    "<all_urls>"
+    "contextMenus",
+    "declarativeNetRequestWithHostAccess",
+    "scripting"
   ],
-  "optional_permissions": [
-    "webRequest",
-    "webRequestBlocking"
+  "host_permissions": [
+    "<all_urls>"
   ],
   "default_locale": "en",
   "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDFCsceeED+YYEgjs62IOuxXEH0H/1cCsqiWp34spoHcSbkWC/8dP1oGlJci8Wpa6+bQkzpCVe14bVHpca8JZ7r8Y0ESs/NptuGKq57xsWgOJ/gnoxV1vWmO1pUTOiLSvxXYunFczMSsqNB3ZXdY3H0gmZzAXOnfDrLJNqWmZIVSwIDAQAB",
   "background": {
-    "page": "bg/bg.html",
-    "persistent": false
-  },
-  "web_accessible_resources": [
-    "content/*.css"
-  ]
+    "service_worker": "bg/bg.js",
+    "type": "module"
+  }
 }

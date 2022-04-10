@@ -1,62 +1,40 @@
-export {fetchInfo};
-import {ignoreLastError} from './bg.js';
-
-async function fetchInfo({src, id}, tabId, frameId) {
-  if (!chrome.webRequest)
-    await enableWebRequest();
-  const spoofer = chrome.webRequest && spoofReferer(src);
-  const xhr = new XMLHttpRequest();
-  try {
-    xhr.open('HEAD', /^https?:\/\//.test(src) ? src : '///throw');
-  } catch (e) {
+export async function fetchInfo(url) {
+  if (!/^https?:\/\//.test(url))
     return;
+  const NOP = () => {};
+  const RULE = {
+    id: 1,
+    condition: {
+      domains: [chrome.runtime.id], // TODO: initiatorDomains in Chrome 102
+      resourceTypes: ['xmlhttprequest'],
+      urlFilter: url,
+    },
+    action: {
+      type: 'modifyHeaders',
+      requestHeaders: [{
+        header: 'Referer',
+        operation: 'set',
+        value: new URL(url).origin + '/',
+      }],
+    },
+  };
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [RULE.id],
+    addRules: [RULE],
+  });
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 10e3);
+  const r = await fetch(url, {method: 'HEAD', signal: ctl.signal}).catch(NOP);
+  const info = {};
+  if (!r || r.status >= 300) {
+    info.error = true;
+  } else {
+    info.size = r.headers.get('Content-Length') | 0;
+    info.type = r.headers.get('Content-Type');
   }
-  xhr.timeout = 10e3;
-  xhr.ontimeout = xhr.onerror = xhr.onreadystatechange = e => {
-    const info = {};
-    if (xhr.status >= 300 || e.type === 'timeout' || e.type === 'error') {
-      info.error = true;
-    } else if (xhr.readyState === XMLHttpRequest.HEADERS_RECEIVED) {
-      info.size = xhr.getResponseHeader('Content-Length') | 0;
-      info.type = xhr.getResponseHeader('Content-Type');
-    } else {
-      return;
-    }
-    chrome.tabs.sendMessage(tabId, {id, info}, {frameId}, ignoreLastError);
-    if (spoofer)
-      chrome.webRequest.onBeforeSendHeaders.removeListener(spoofer);
-  };
-  xhr.send();
-}
-
-function spoofReferer(src) {
-  const spoofer = ({requestHeaders}) => {
-    let ref = requestHeaders.find(h => h.name.toLowerCase() === 'referer');
-    if (!ref)
-      requestHeaders.push((ref = {name: 'Referer'}));
-    ref.value = new URL(src).origin + '/';
-    return {requestHeaders};
-  };
-  const filter = {
-    tabId: -1,
-    types: ['xmlhttprequest'],
-    urls: [src.split('#', 1)[0] + '*'],
-  };
-  const extras = [
-    'requestHeaders',
-    'blocking',
-    chrome.webRequest.OnBeforeSendHeadersOptions.EXTRA_HEADERS,
-  ].filter(Boolean);
-  chrome.webRequest.onBeforeSendHeaders.addListener(spoofer, filter, extras);
-  return spoofer;
-}
-
-function enableWebRequest() {
-  return new Promise(resolve =>
-    chrome.permissions.request({
-      permissions: [
-        'webRequest',
-        'webRequestBlocking',
-      ],
-    }, resolve));
+  clearTimeout(timer);
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [RULE.id],
+  });
+  return info;
 }

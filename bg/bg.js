@@ -1,36 +1,22 @@
-﻿export {ignoreLastError};
+﻿import {fetchInfo} from './bg-xhr.js';
+import './bg-install.js';
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  const {frameId} = info;
-  const msg = {
-    src: info.srcUrl,
-    link: info.linkUrl,
-  };
-  const pong =
-    await ping(tab.id, frameId, msg) ||
-    await exec(tab.id, {
-      file: '/content/show-info.js',
-      runAt: 'document_start',
-      matchAboutBlank: true,
-      frameId,
-    }) &&
-    await ping(tab.id, frameId, msg);
-  if (pong && pong.src)
-    (await import('./bg-xhr.js')).fetchInfo(pong, tab.id, frameId);
+chrome.contextMenus.onClicked.addListener(async ({srcUrl, linkUrl, frameId}, tab) => {
+  const CONTENT = '/content/show-info';
+  const MSG = {src: srcUrl, link: linkUrl};
+  const tabId = tab.id;
+  const nop = () => {};
+  const exec = () => chrome.scripting.executeScript({
+    target: {tabId, frameIds: [frameId]},
+    files: [CONTENT + '.js'],
+    // injectImmediately: true, // TODO: Chrome 102
+  }).catch(nop);
+  const getCss = () => fetch(CONTENT + '.css').then(r => r.text());
+  const send = msg => chrome.tabs.sendMessage(tabId, msg ?? MSG, {frameId}).catch(nop);
+  const {id, src} =
+    await send() ||
+    await Promise.all([getCss(), exec()])
+      .then(([css]) => send({...MSG, css})) ||
+    {};
+  if (src) send({id, info: await fetchInfo(src)});
 });
-
-function ping(tabId, frameId, msg) {
-  return new Promise(resolve =>
-    chrome.tabs.sendMessage(tabId, msg, {frameId}, data =>
-      resolve(ignoreLastError(data))));
-}
-
-function exec(...args) {
-  return new Promise(resolve =>
-    chrome.tabs.executeScript(...args, data =>
-      resolve(ignoreLastError(data))));
-}
-
-function ignoreLastError(data) {
-  return chrome.runtime.lastError ? undefined : data;
-}

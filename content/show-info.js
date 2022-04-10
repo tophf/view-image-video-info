@@ -1,42 +1,60 @@
 'use strict';
 
-window.dispatchEvent(new Event(chrome.runtime.id));
-!chrome.runtime.onMessage.hasListeners() && (() => {
+window.INJECTED !== 1 && (() => {
+  window.INJECTED = 1;
 
-  const registry = new Map();
-  let uiStyle, pushStateEventId;
+  const EXT_ID = chrome.runtime.id;
+  /** @type {Map<string,Info>}*/
+  const id2info = new Map();
+  /** @type {WeakMap<HTMLImageElement,Info>}*/
+  const img2info = new WeakMap();
+  const xo = new IntersectionObserver(onIntersect, {rootMargin: 0x1F_FFFF + 'px'});
+  let uiStyle, uiCss;
 
+  dispatchEvent(new Event(EXT_ID));
+  addEventListener(EXT_ID, quitWhenOrphaned);
   chrome.runtime.onMessage.addListener(onMessage);
-  window.addEventListener(chrome.runtime.id, quitWhenOrphaned);
 
   function onMessage(msg, sender, sendResponse) {
-    if (msg.src || msg.link)
-      sendResponse(showInfo(msg) || {});
+    if (msg.css)
+      uiCss = msg.css;
+    if (msg.src || msg.link) {
+      const info = find(msg);
+      const isRemote = info && start(info);
+      const id = isRemote && `${Math.random()}.${performance.now()}`;
+      if (id) id2info.set(id, info);
+      sendResponse(id ? {id, src: info.src} : {});
+      return;
+    }
     if (msg.info) {
-      const info = registry.get(msg.id);
-      registry.delete(msg.id);
-      info && renderFileMeta(Object.assign(info, msg.info));
+      const r = id2info.get(msg.id);
+      id2info.delete(msg.id);
+      if (r) renderFileMeta(Object.assign(msg.info, r));
     }
   }
 
-  function quitWhenOrphaned(event) {
+  /** @param {IntersectionObserverEntry[]} entries */
+  function onIntersect(entries) {
+    for (const e of entries) {
+      if (!e.isIntersecting)
+        removeAll({img: e.target});
+    }
+  }
+
+  function quitWhenOrphaned() {
     try {
       chrome.i18n.getUILanguage();
-    } catch (e) {
-      if (pushStateEventId)
-        runInPage(id => {
-          if (history.pushState.__eventId === id)
-            delete history.pushState;
-        }, pushStateEventId);
-      removeNavListeners();
-      window.removeEventListener(event.type, quitWhenOrphaned);
-      chrome.runtime.onMessage.removeListener(onMessage);
-      for (const el of document.getElementsByClassName(event.type))
-        el.remove();
-    }
+      return;
+    } catch (e) {}
+    xo.disconnect();
+    for (const el of document.getElementsByClassName(EXT_ID))
+      el.remove();
+    xo.disconnect();
+    removeEventListener(EXT_ID, quitWhenOrphaned);
+    chrome.runtime.onMessage.removeListener(onMessage);
   }
 
-  function getInfo({src, link}) {
+  function find({src, link}) {
     const rxLast = /[^/]*\/?$/;
     const tail = src && (src.startsWith('data:') ? src : src.match(rxLast)[0]).slice(-500);
     const linkSel = link && `a[href$="${(
@@ -47,8 +65,10 @@ window.dispatchEvent(new Event(chrome.runtime.id));
     const sel = !src ? linkSel :
       `${link ? linkSel : ''} :-webkit-any([src$="${tail}"], [srcset*="${tail}"])`;
     const img = findClickedImage(src || link, sel, document);
+    /** @namespace Info */
     return img && {
       img,
+      el: null,
       src: img.src || img.currentSrc,
       alt: (img.alt || '').trim(),
       title: (img.title || '').trim(),
@@ -89,62 +109,31 @@ window.dispatchEvent(new Event(chrome.runtime.id));
            b.top < innerHeight && b.left < innerWidth;
   }
 
-  function showInfo(opts) {
-    const info = getInfo(opts);
-    if (!info)
-      return;
-
+  function start(info) {
     removeAll(info);
     createUI(info);
-
     // get size/type
-    let bgRequest;
     const {src} = info;
-    if (/^data:.*?base64/.test(src)) {
+    const isData = /^data:.*?base64/.test(src);
+    if (isData) {
       info.type = src.split(/[/;]/, 2).pop().toUpperCase();
       info.size = src.split(';').pop().length / 6 * 8 | 0;
       renderFileMeta(info);
-    } else {
-      const id = performance.now();
-      bgRequest = {id, src};
-      registry.set(id, info);
     }
-
-    Promise.resolve(uiStyle || loadStyle()).then(() => {
-      let style;
-      const root = info.el.shadowRoot;
-      if (root.adoptedStyleSheets) {
-        style = new CSSStyleSheet();
-        style.replaceSync(':host {}');
-        root.adoptedStyleSheets = [uiStyle, style];
-      } else {
-        style = $make('style', ':host {}');
-        root.append(uiStyle.cloneNode(true), style);
-      }
-      document.body.appendChild(info.el);
-      info.style = (style.sheet || style).cssRules[0].style;
-      adjustUI(info);
-    });
-
-    return bgRequest;
-  }
-
-  async function loadStyle() {
-    const url = chrome.runtime.getURL('/content/show-info.css');
-    const css = await (await fetch(url)).text();
-    if (document.adoptedStyleSheets) {
-      uiStyle = new CSSStyleSheet();
-      uiStyle.replaceSync(css);
-    } else {
-      uiStyle = $make('style', css);
-    }
+    const style = $make('style', ':host {}');
+    info.root.append(uiStyle || (uiStyle = $make('style', uiCss)), style);
+    document.body.appendChild(info.el);
+    info.style = style.sheet.cssRules[0].style;
+    adjustUI(info);
+    return !isData;
   }
 
   function createUI(info) {
     const {img, src, w, h, alt, title, bounds: {width: dw, height: dh}} = info;
     const isImage = img.localName === 'img';
-    const el = $make('div', {img, className: chrome.runtime.id});
-    el.attachShadow({mode: 'open'}).append(
+    const el = $make('div', {img, className: EXT_ID});
+    const root = el.attachShadow({mode: 'closed'});
+    root.append(
       $make('main', [
         $make('div', {
           id: 'close',
@@ -199,11 +188,12 @@ window.dispatchEvent(new Event(chrome.runtime.id));
       ])
     );
     info.el = el;
+    info.root = root;
   }
 
-  function renderFileMeta({size, type, el}) {
+  function renderFileMeta({size, type, root}) {
     // size
-    const elSize = el.shadowRoot.getElementById('size');
+    const elSize = root.getElementById('size');
     if (size) {
       let unit;
       let n = size;
@@ -217,7 +207,7 @@ window.dispatchEvent(new Event(chrome.runtime.id));
         size = bytes;
       } else {
         size = `${formatNumber(n)} ${unit}`;
-        el.shadowRoot.getElementById('bytes').textContent = ` (${bytes})`;
+        root.getElementById('bytes').textContent = ` (${bytes})`;
       }
       elSize.textContent = size;
     } else {
@@ -225,7 +215,7 @@ window.dispatchEvent(new Event(chrome.runtime.id));
     }
 
     // type
-    const elType = el.shadowRoot.getElementById('type');
+    const elType = root.getElementById('type');
     type = (type || '').split('/', 2).pop().toUpperCase();
     if (type && type !== 'HTML')
       elType.textContent = type;
@@ -233,7 +223,8 @@ window.dispatchEvent(new Event(chrome.runtime.id));
       elType.closest('tr').remove();
   }
 
-  function adjustUI({el, img, bounds, style}) {
+  function adjustUI(info) {
+    const {el, img, bounds, style, root} = info;
     // set position
     const r1 = document.scrollingElement.getBoundingClientRect();
     const r2 = document.body.getBoundingClientRect();
@@ -244,7 +235,6 @@ window.dispatchEvent(new Event(chrome.runtime.id));
     const y = clamp(bounds.bottom, 10, Math.min(innerHeight, maxH) - b.height - 10);
     style.setProperty('left', x + scrollX + 'px', 'important');
     style.setProperty('top', y + scrollY + 'px', 'important');
-
     // set auto-fadeout
     let fadeOutTimer;
     el.onmouseleave = () => {
@@ -261,56 +251,25 @@ window.dispatchEvent(new Event(chrome.runtime.id));
       el.onmouseenter();
       fadeOutTimer = setTimeout(el.onmouseleave, 5e3);
     }
-
     // expand URL width to fill the entire cell
     requestAnimationFrame(() => {
-      const elUrl = el.shadowRoot.getElementById('url');
+      const elUrl = root.getElementById('url');
       elUrl.style.maxWidth = elUrl.parentNode.offsetWidth + 'px';
     });
-
-    // detect SPA navigation
-    if (!pushStateEventId) {
-      pushStateEventId = chrome.runtime.id + '.' + performance.now();
-      runInPage(setupNavDetector, pushStateEventId);
-    }
-    window.addEventListener(pushStateEventId, removeAll);
-    window.addEventListener('hashchange', removeAll);
-    window.addEventListener('popstate', removeAll);
-  }
-
-  function setupNavDetector(eventId) {
-    const fn = history.pushState;
-    history.pushState = function () {
-      window.dispatchEvent(new Event(eventId));
-      return fn.apply(this, arguments);
-    };
-    history.pushState.__eventId = eventId;
-  }
-
-  function runInPage(fn, ...args) {
-    const el = $make('script', `(${fn})(${JSON.stringify(args).slice(1, -1)})`);
-    document.head.appendChild(el);
-    el.remove();
-  }
-
-  function removeNavListeners() {
-    window.removeEventListener('hashchange', removeAll);
-    window.removeEventListener('popstate', removeAll);
-    window.removeEventListener(pushStateEventId, removeAll);
+    xo.observe(img);
+    img2info.set(img, info);
   }
 
   function removeAll({img} = {}) {
-    const all = document.getElementsByClassName(chrome.runtime.id);
-    const wasShown = Boolean(all[0]);
-    // since it's a live collection we need to work on a static copy
-    for (const el of [...all]) {
-      if (!img || el.img === img) {
-        el.shadowRoot.adoptedStyleSheets = [];
-        el.remove();
-      }
+    const wasShown = img2info.size;
+    const infos = img ? [img2info.get(img)].filter(Boolean) : img2info.values();
+    for (const i of infos) {
+      i.el.remove();
+      xo.unobserve(i.img);
+      img2info.delete(i.img);
     }
-    if (wasShown && !all[0])
-      removeNavListeners();
+    if (wasShown && !img2info.size)
+      xo.disconnect();
   }
 
   function formatNumber(n) {
