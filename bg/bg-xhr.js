@@ -1,9 +1,11 @@
+let ruleId = 0;
+
 export async function fetchInfo(url) {
   if (!/^https?:\/\//.test(url))
     return;
   const NOP = () => {};
   const RULE = {
-    id: 1,
+    id: ++ruleId,
     condition: {
       domains: [chrome.runtime.id], // TODO: initiatorDomains in Chrome 102
       resourceTypes: ['xmlhttprequest'],
@@ -23,7 +25,7 @@ export async function fetchInfo(url) {
     addRules: [RULE],
   });
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 10e3);
+  const timer = setTimeout(() => ctl.abort(), 20e3);
   const r = await fetch(url, {method: 'HEAD', signal: ctl.signal}).catch(NOP);
   const info = {};
   if (!r || r.status >= 300) {
