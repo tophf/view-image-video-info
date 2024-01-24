@@ -57,7 +57,7 @@ window.INJECTED !== 1 && (() => {
   function find({src, link}) {
     const rxLast = /[^/]*\/?$/;
     const tail = src && (src.startsWith('data:') ? src : src.match(rxLast)[0]).slice(-500);
-    const linkSel = link && `a[href$="${(
+    const linkSel = link === location.href ? 'a' : link && `a[href$="${(
       !link.startsWith(location.origin) ?
         link.slice(link.indexOf('://') + 1) :
         link.match(rxLast)[0]
